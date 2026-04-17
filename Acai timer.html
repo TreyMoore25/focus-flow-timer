@@ -518,19 +518,21 @@
     }
     .log-entry-time { font-size: .75rem; color: var(--pink); font-weight: 500; }
     .log-entry-dur  { font-size: .72rem; color: #b07090; }
-    .log-entry-del  {
+    .log-entry-del, .log-entry-slack {
       grid-row: 1;
-      grid-column: 3;
       background: none;
       border: none;
       cursor: pointer;
-      font-size: .75rem;
-      color: #d0b0b8;
+      font-size: .72rem;
       padding: 0 2px;
       line-height: 1;
       transition: color .15s;
     }
+    .log-entry-del   { grid-column: 4; color: #d0b0b8; }
     .log-entry-del:hover { color: #e04060; }
+    .log-entry-slack { grid-column: 3; color: #b0c0d8; }
+    .log-entry-slack:hover { color: #4a8fd0; }
+    .log-entry { grid-template-columns: 1fr auto auto auto; }
     .log-entry-note { font-size: .78rem; color: #6a7080; grid-column: 1 / -1; margin-top: 3px; }
     .muted { color: #c0b0b8; font-style: italic; }
 
@@ -1215,7 +1217,7 @@
         const st = new Date(e.startIso), en = new Date(e.endIso);
         const tr = fmtHMS(st) + ' \u2013 ' + fmtHMS(en);
         const noteHtml = e.note ? escapeHtml(e.note) : '<span class="muted">(no note)</span>';
-        html += '<div class="log-entry" data-id="' + escapeHtml(e.id) + '"><span class="log-entry-time">' + tr + '</span><span class="log-entry-dur">' + e.durationMin + ' min</span><button class="log-entry-del" title="Remove entry">&times;</button><p class="log-entry-note">' + noteHtml + '</p></div>';
+        html += '<div class="log-entry" data-id="' + escapeHtml(e.id) + '" data-note="' + escapeHtml(e.note||'') + '" data-dur="' + e.durationMin + '" data-time="' + escapeHtml(tr) + '"><span class="log-entry-time">' + tr + '</span><span class="log-entry-dur">' + e.durationMin + ' min</span><button class="log-entry-slack" title="Send to Slack">&#128279;</button><button class="log-entry-del" title="Remove entry">&times;</button><p class="log-entry-note">' + noteHtml + '</p></div>';
       });
       html += '</div>';
     });
@@ -1224,6 +1226,22 @@
       btn.addEventListener('click', () => {
         const id = btn.closest('.log-entry').getAttribute('data-id');
         if (id) deleteLogEntry(id);
+      });
+    });
+    host.querySelectorAll('.log-entry-slack').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row  = btn.closest('.log-entry');
+        const tr   = row.getAttribute('data-time');
+        const dur  = row.getAttribute('data-dur');
+        const note = row.getAttribute('data-note');
+        const text = '\u2705 *Focus Block* \u2014 ' + dur + ' min (' + tr + ')' + (note ? '\n>' + note : '');
+        const url  = getSlackWebhookUrl();
+        if (!url) { setSlackStatus('No Slack webhook saved yet.', true); return; }
+        btn.textContent = '⏳';
+        fetch(url, { method:'POST', body: JSON.stringify({ text }), headers:{'Content-Type':'application/json'} })
+          .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+          .then(() => { btn.textContent = '✅'; setTimeout(() => { btn.innerHTML = '&#128279;'; }, 2500); setSlackStatus('Sent to Slack!', false); })
+          .catch(() => { btn.innerHTML = '&#128279;'; setSlackStatus('Slack send failed — check webhook URL.', true); });
       });
     });
   }
