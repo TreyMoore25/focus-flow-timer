@@ -1248,6 +1248,17 @@
     return lines.join('\n').trim() + '\n';
   }
 
+  // ── Browser notifications ─────────────────────────────────────────────────
+  function requestNotifPermission() {
+    if ('Notification' in window && Notification.permission === 'default')
+      Notification.requestPermission();
+  }
+
+  function sendNotif(title, body) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    new Notification(title, { body, icon: '' });
+  }
+
   // ── Break / session flow ───────────────────────────────────────────────────
   function beginBreakAfterFocus() {
     isBreak = true; totalSeconds = 5 * 60; remaining = totalSeconds;
@@ -1255,6 +1266,7 @@
     display.style.color = '#2d6a3e';
     updateDisplay(); completeMsg.classList.remove('show');
     startBtn.textContent = 'Start Break';
+    sendNotif('Time for a break! 🍓', 'Focus session complete. Step away for 5 minutes.');
   }
 
   function showFocusLogPrompt(startIso, endIso, durationSec, onDone) {
@@ -1360,6 +1372,7 @@
         isBreak = false;
         const t = readDurationSeconds(); totalSeconds = t > 0 ? t : 25 * 60; remaining = totalSeconds;
         modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
+        sendNotif("Break's over — back to it! ☕", 'Start your next focus session when ready.');
         setTimeout(() => { updateDisplay(); completeMsg.classList.remove('show'); startBtn.textContent = 'Start Sipping'; }, 2200);
       }
       return;
@@ -1374,7 +1387,7 @@
     } else {
       const lm = document.getElementById('logModal');
       if (lm && lm.classList.contains('show')) return;
-      primeAlarmAudio(); completeMsg.classList.remove('show');
+      primeAlarmAudio(); requestNotifPermission(); completeMsg.classList.remove('show');
       if (!isBreak && remaining <= 0) {
         const from = readDurationSeconds(); totalSeconds = from > 0 ? from : 25 * 60;
         remaining = totalSeconds; focusSessionStart = null; updateDisplay();
