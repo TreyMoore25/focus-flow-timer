@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trey's Focus Flow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink: #3d6fa3;
+      --red: #1e3a52;
+      --blush: #e4ebf4;
+      --berry: #1a2836;
+      --accent: #e8445a;
+      --accent2: #f472b6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      min-height: 100vh;
+      background: #020412;
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+      padding: 20px 20px 32px;
+    }
+
+    /* ── Star field canvas ── */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.1rem;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -.5px;
+      text-shadow: 0 0 30px rgba(232,68,90,.4);
+    }
+    .title span { color: var(--accent); }
+    .subtitle {
+      font-size: .72rem;
+      font-weight: 300;
+      color: rgba(200,180,220,.7);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* ── Dashboard grid ── */
+    .dashboard {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 250px 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 14px;
+      max-width: 1020px;
+      margin: 0 auto;
+    }
+
+    /* ── Tile base ── */
+    .tile {
+      background: rgba(255, 255, 255, .95);
+      border-radius: 18px;
+      padding: 16px 18px 18px;
+      box-shadow: 0 4px 20px rgba(180,40,80,.09), 0 1px 4px rgba(30,58,82,.06);
+      border: 1px solid rgba(240,200,215,.5);
+    }
+
+    .tile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .tile-label {
+      font-size: .63rem;
+      font-weight: 500;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: #b07090;
+    }
+
+    /* ══════════════════════════════════════
+       TILE 1 — Visualization
+    ══════════════════════════════════════ */
+    .tile-visual {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cup-scene {
+      position: relative;
+      width: 175px;
+      height: 298px;
+      cursor: pointer;
+      transition: opacity .3s;
+    }
+    .cup-scene:hover { opacity: .9; }
+    .cup-svg { width: 100%; height: 100%; overflow: visible; }
+
+    .drop {
+      position: absolute;
+      width: 2.5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.5);
+      animation: drip linear infinite;
+    }
+    @keyframes drip {
+      0%   { transform: scaleY(1) translateY(0); opacity: .65; }
+      80%  { opacity: .3; }
+      100% { transform: scaleY(2.8) translateY(28px); opacity: 0; }
+    }
+    @keyframes sipRipple {
+      0%   { transform: scale(0); opacity: .7; }
+      100% { transform: scale(3); opacity: 0; }
+    }
+    .sip-ripple {
+      position: absolute;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(228,68,90,.28);
+      pointer-events: none;
+      animation: sipRipple .65s ease-out forwards;
+    }
+
+    .sessions { display: flex; gap: 6px; align-items: center; }
+    .session-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #f0c0cf;
+      transition: background .3s;
+    }
+    .session-dot.done { background: var(--accent); box-shadow: 0 0 8px rgba(228,68,90,.5); }
+    .session-label { font-size: .66rem; color: #b07090; letter-spacing: 2px; text-transform: uppercase; margin-right: 4px; }
+
+    .complete-msg {
+      display: none;
+      font-family: 'Playfair Display', serif;
+      font-size: .95rem;
+      color: var(--berry);
+      text-align: center;
+      animation: fadeIn .6s ease;
+    }
+    .complete-msg.show { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════
+       TILE 2 — Timer
+    ══════════════════════════════════════ */
+    .tile-timer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .progress-wrap {
+      position: relative;
+      width: 140px; height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .progress-svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+    .progress-track { fill: none; stroke: #fde8ec; stroke-width: 7; }
+    #progress-arc {
+      fill: none;
+      stroke: url(#arcGrad);
+      stroke-width: 7;
+      stroke-linecap: round;
+      transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);
+    }
+
+    .timer-display {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.6rem;
+      font-weight: 900;
+      color: var(--berry);
+      letter-spacing: -2px;
+      line-height: 1;
+      text-align: center;
+    }
+    .timer-label {
+      font-size: .65rem;
+      color: #b07090;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-align: center;
+      margin-top: 3px;
+    }
+
+    /* Controls */
+    .controls { display: flex; gap: 10px; align-items: center; justify-content: center; }
+
+    .btn {
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      border-radius: 50px;
+      transition: all .2s ease;
+      outline: none;
+    }
+    .btn:focus-visible { outline: 2px solid var(--berry); outline-offset: 3px; }
+    .btn:active { transform: scale(.95); }
+
+    .btn-main {
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: white;
+      font-size: .9rem;
+      padding: 12px 28px;
+      letter-spacing: .4px;
+      box-shadow: 0 8px 22px rgba(232,68,90,.28);
+    }
+    .btn-main:hover { box-shadow: 0 12px 30px rgba(232,68,90,.4); transform: translateY(-1px); }
+
+    .btn-icon {
+      background: white;
+      color: var(--berry);
+      font-size: 1rem;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(30,52,74,.14);
+    }
+    .btn-icon:hover { background: var(--blush); }
+
+    /* Duration picker */
+    .dur-section { display: flex; flex-direction: column; align-items: center; gap: 7px; width: 100%; }
+    .dur-label-row { font-size: .65rem; color: #b07090; letter-spacing: 2px; text-transform: uppercase; }
+    .dur-tabs { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+
+    .dur-btn {
+      background: white;
+      border: 1.5px solid #f0c0cf;
+      color: var(--berry);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .74rem;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all .18s;
+      letter-spacing: .3px;
+    }
+    .dur-btn:focus-visible { outline: 2px solid var(--berry); outline-offset: 2px; }
+    .dur-btn:hover,
+    .dur-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 4px 12px rgba(232,68,90,.3);
+    }
+
+    .custom-block {
+      background: rgba(255,255,255,.7);
+      border: 1.5px solid #f0c0cf;
+      border-radius: 16px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      width: 100%;
+    }
+    .custom-title { font-size: .65rem; color: #b07090; letter-spacing: 2px; text-transform: uppercase; }
+    .custom-row { display: flex; align-items: center; gap: 6px; }
+
+    .time-field { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .time-field label { font-size: .58rem; color: #c09090; letter-spacing: 1px; text-transform: uppercase; }
+
+    .time-input {
+      width: 46px;
+      text-align: center;
+      background: white;
+      border: 1.5px solid #f0c0cf;
+      color: var(--berry);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .88rem;
+      font-weight: 500;
+      padding: 5px 3px;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color .18s;
+      -moz-appearance: textfield;
+    }
+    .time-input::-webkit-outer-spin-button,
+    .time-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .time-input:focus { border-color: var(--accent); }
+    .time-sep { color: #d090a0; font-weight: 700; font-size: 1rem; margin-top: 12px; }
+
+    .set-btn {
+      background: linear-gradient(135deg, var(--red), #c0394a);
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .76rem;
+      font-weight: 500;
+      padding: 7px 16px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      transition: all .18s;
+      letter-spacing: .3px;
+      box-shadow: 0 4px 12px rgba(155,31,74,.22);
+      white-space: nowrap;
+    }
+    .set-btn:focus-visible { outline: 2px solid var(--berry); outline-offset: 2px; }
+    .set-btn:hover { box-shadow: 0 6px 18px rgba(232,68,90,.35); transform: translateY(-1px); }
+
+    /* ══════════════════════════════════════
+       TILE 3 — To-Do
+    ══════════════════════════════════════ */
+    .tile-todo {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .todo-add-row { display: flex; gap: 8px; }
+
+    .todo-input {
+      flex: 1;
+      border: 1.5px solid #f0c0cf;
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .85rem;
+      color: var(--berry);
+      outline: none;
+      background: white;
+      transition: border-color .18s;
+    }
+    .todo-input:focus { border-color: var(--accent); }
+    .todo-input::placeholder { color: #c0a0b0; }
+
+    .btn-add {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      width: 36px; height: 36px;
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .18s;
+      box-shadow: 0 4px 12px rgba(232,68,90,.3);
+      flex-shrink: 0;
+    }
+    .btn-add:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(232,68,90,.4); }
+
+    .todo-date-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .75rem;
+      color: #b07090;
+    }
+    .todo-date-opt { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
+    .todo-date-input {
+      border: 1.5px solid #f0c0cf;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .75rem;
+      color: var(--berry);
+      outline: none;
+      background: white;
+      flex: 1;
+    }
+
+    .todo-sections {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 240px;
+    }
+    .todo-sections::-webkit-scrollbar { width: 4px; }
+    .todo-sections::-webkit-scrollbar-thumb { background: #f0c0cf; border-radius: 4px; }
+
+    .todo-section-label {
+      font-size: .62rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #c0a0b0;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .done-label { color: #b0b8c0; }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 10px;
+      background: rgba(255,248,250,.8);
+      border: 1px solid #f5e0e8;
+      margin-bottom: 4px;
+      transition: background .18s;
+    }
+    .todo-item:hover { background: rgba(255,240,248,.95); }
+    .todo-item-done { opacity: .6; }
+
+    .todo-row-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      cursor: pointer;
+      min-width: 0;
+    }
+    .todo-cb { cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+
+    .todo-text {
+      font-size: .82rem;
+      color: var(--berry);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .todo-text-done { text-decoration: line-through; color: #a0a8b0; }
+
+    .todo-badge {
+      font-size: .62rem;
+      background: #f0e0e8;
+      color: #b07090;
+      padding: 2px 7px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .todo-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    .btn-text {
+      background: none;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .7rem;
+      color: #b07090;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 4px;
+      transition: color .18s;
+    }
+    .btn-text:hover { color: var(--accent); }
+    .todo-del { color: #c0a0a8; }
+    .todo-del:hover { color: #e04060; }
+
+    .todo-empty { font-size: .78rem; color: #c0b0b8; font-style: italic; padding: 4px 0; }
+
+    /* ══════════════════════════════════════
+       TILE 4 — Log
+    ══════════════════════════════════════ */
+    .tile-log {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tile-log-body {
+      display: flex;
+      gap: 20px;
+      min-height: 0;
+    }
+
+    #dayLogContent {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 180px;
+    }
+    #dayLogContent::-webkit-scrollbar { width: 4px; }
+    #dayLogContent::-webkit-scrollbar-thumb { background: #f0c0cf; border-radius: 4px; }
+
+    .day-log-empty { font-size: .8rem; color: #c0b0b8; font-style: italic; }
+
+    .hour-block { margin-bottom: 12px; }
+    .hour-label { font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: #c0a0b0; margin-bottom: 6px; }
+
+    .log-entry {
+      background: rgba(255,248,250,.85);
+      border: 1px solid #f5e0e8;
+      border-radius: 10px;
+      padding: 9px 12px;
+      margin-bottom: 5px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 2px 8px;
+      align-items: start;
+    }
+    .log-entry-time { font-size: .75rem; color: var(--pink); font-weight: 500; }
+    .log-entry-dur  { font-size: .72rem; color: #b07090; }
+    .log-entry-del  {
+      grid-row: 1;
+      grid-column: 3;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: .75rem;
+      color: #d0b0b8;
+      padding: 0 2px;
+      line-height: 1;
+      transition: color .15s;
+    }
+    .log-entry-del:hover { color: #e04060; }
+    .log-entry-note { font-size: .78rem; color: #6a7080; grid-column: 1 / -1; margin-top: 3px; }
+    .muted { color: #c0b0b8; font-style: italic; }
+
+    /* Integrations */
+    .integrations {
+      border-left: 1px solid #f0e0e8;
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 280px;
+      max-width: 340px;
+    }
+    .integration-section { display: flex; flex-direction: column; gap: 5px; }
+    .int-label { font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: #c0a0b0; }
+    .int-row { display: flex; gap: 6px; }
+
+    .int-input {
+      flex: 1;
+      border: 1.5px solid #f0c0cf;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .75rem;
+      color: var(--berry);
+      outline: none;
+      background: white;
+      transition: border-color .18s;
+      min-width: 0;
+    }
+    .int-input:focus { border-color: var(--accent); }
+    .sync-status { font-size: .7rem; min-height: 1rem; }
+
+    /* ── Log Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(20,30,40,.55);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.show { display: flex; }
+
+    .modal-card {
+      background: white;
+      border-radius: 22px;
+      padding: 28px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(20,30,40,.3);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--berry); }
+    .modal-time  { font-size: .8rem; color: #b07090; }
+
+    .modal-note {
+      border: 1.5px solid #f0c0cf;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .88rem;
+      color: var(--berry);
+      outline: none;
+      resize: vertical;
+      min-height: 80px;
+      transition: border-color .18s;
+    }
+    .modal-note:focus { border-color: var(--accent); }
+    .modal-note::placeholder { color: #c0a0b0; }
+
+    .modal-row { display: flex; align-items: center; justify-content: space-between; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .dashboard { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<header class="page-header">
+  <div class="title">Trey's Focus <span>Flow</span></div>
+</header>
+
+<main class="dashboard">
+
+  <!-- ── Tile 1: Visualization ── -->
+  <div class="tile tile-visual">
+    <div class="cup-scene" id="cupScene">
+      <svg class="cup-svg" viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="cupClip">
+            <path d="M22,32 L36,318 Q36,330 50,330 L150,330 Q164,330 164,318 L178,32 Z"/>
+          </clipPath>
+          <linearGradient id="liqGrad" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%"   stop-color="#7a1020"/>
+            <stop offset="30%"  stop-color="#b82035"/>
+            <stop offset="65%"  stop-color="#e04060"/>
+            <stop offset="100%" stop-color="#f08098"/>
+          </linearGradient>
+          <linearGradient id="liqSide" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="rgba(90,5,20,.4)"/>
+            <stop offset="18%"  stop-color="rgba(255,160,170,.07)"/>
+            <stop offset="50%"  stop-color="rgba(255,200,210,.12)"/>
+            <stop offset="82%"  stop-color="rgba(255,160,170,.07)"/>
+            <stop offset="100%" stop-color="rgba(90,5,20,.38)"/>
+          </linearGradient>
+          <linearGradient id="liqRefract" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="rgba(255,255,255,0)"/>
+            <stop offset="40%"  stop-color="rgba(255,255,255,.08)"/>
+            <stop offset="60%"  stop-color="rgba(255,255,255,.13)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+          </linearGradient>
+          <linearGradient id="cupWall" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="rgba(255,228,234,.88)"/>
+            <stop offset="10%"  stop-color="rgba(255,240,244,.45)"/>
+            <stop offset="50%"  stop-color="rgba(255,248,250,.06)"/>
+            <stop offset="90%"  stop-color="rgba(255,240,244,.4)"/>
+            <stop offset="100%" stop-color="rgba(255,228,234,.82)"/>
+          </linearGradient>
+          <linearGradient id="iceG" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stop-color="rgba(255,255,255,.95)"/>
+            <stop offset="55%"  stop-color="rgba(215,238,255,.78)"/>
+            <stop offset="100%" stop-color="rgba(170,215,240,.55)"/>
+          </linearGradient>
+          <filter id="iceBlur"><feGaussianBlur stdDeviation="0.7"/></filter>
+          <filter id="surfaceGlow" x="-5%" y="-40%" width="110%" height="180%">
+            <feGaussianBlur stdDeviation="1.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Cup shell -->
+        <path d="M22,32 L36,318 Q36,330 50,330 L150,330 Q164,330 164,318 L178,32 Z"
+              fill="rgba(255,235,240,.55)" stroke="#d898b0" stroke-width="1.8"/>
+
+        <!-- Liquid + wave + ice -->
+        <g clip-path="url(#cupClip)">
+          <rect id="liquid-fill"    x="0" y="32" width="200" height="298" fill="url(#liqGrad)"/>
+          <rect id="liquid-side"    x="0" y="32" width="200" height="298" fill="url(#liqSide)"/>
+          <rect id="liquid-refract" x="0" y="32" width="200" height="298" fill="url(#liqRefract)"/>
+
+          <g id="wave-group">
+            <path id="wave-shadow" d="M0,14 C25,8 55,20 80,14 C105,8 130,20 155,14 C170,10 185,16 200,14 L200,30 L0,30 Z" fill="rgba(120,15,40,.5)"/>
+            <path id="wave-main"   d="M0,10 C22,4 48,18 74,10 C100,2 126,18 152,10 C168,5 184,14 200,10 L200,22 L0,22 Z" fill="rgba(248,130,158,.8)" filter="url(#surfaceGlow)"/>
+            <path id="wave-crest"  d="M0,11 C24,7 50,15 76,11 C102,7 128,15 154,11 C170,8 186,13 200,11 L200,15 L0,15 Z" fill="rgba(255,210,220,.65)"/>
+            <ellipse id="foam1" cx="40"  cy="11" rx="6"   ry="2"   fill="rgba(255,240,244,.5)"/>
+            <ellipse id="foam2" cx="110" cy="9"  rx="8"   ry="2"   fill="rgba(255,240,244,.45)"/>
+            <ellipse id="foam3" cx="168" cy="11" rx="5"   ry="1.5" fill="rgba(255,240,244,.4)"/>
+          </g>
+
+          <!-- Ice cubes -->
+          <g id="ice-group">
+            <g transform="rotate(-5,85,272)" opacity=".72">
+              <rect x="64" y="260" width="42" height="30" rx="6" fill="url(#iceG)"/>
+              <rect x="67" y="263" width="12" height="2.5" rx="1.5" fill="rgba(255,255,255,.7)"/>
+              <line x1="64" y1="275" x2="106" y2="275" stroke="rgba(160,210,235,.4)" stroke-width="1"/>
+            </g>
+            <g transform="rotate(8,135,270)" opacity=".68">
+              <rect x="114" y="258" width="40" height="30" rx="6" fill="url(#iceG)" filter="url(#iceBlur)"/>
+              <rect x="117" y="261" width="10" height="2.5" rx="1.5" fill="rgba(255,255,255,.65)"/>
+              <line x1="114" y1="273" x2="154" y2="273" stroke="rgba(160,210,235,.35)" stroke-width="1"/>
+            </g>
+            <g transform="rotate(-9,72,295)" opacity=".88">
+              <rect x="50" y="285" width="44" height="32" rx="6" fill="url(#iceG)" filter="url(#iceBlur)"/>
+              <rect x="53" y="288" width="14" height="3"   rx="2"   fill="rgba(255,255,255,.75)"/>
+              <line x1="50" y1="301" x2="94"  y2="301" stroke="rgba(160,210,235,.45)" stroke-width="1.2"/>
+              <path d="M50,295 L94,295" stroke="rgba(180,220,240,.25)" stroke-width=".6" fill="none"/>
+            </g>
+            <g transform="rotate(5,140,292)" opacity=".85">
+              <rect x="119" y="280" width="42" height="30" rx="6" fill="url(#iceG)"/>
+              <rect x="122" y="283" width="12" height="3"   rx="2"   fill="rgba(255,255,255,.7)"/>
+              <line x1="119" y1="296" x2="161" y2="296" stroke="rgba(160,210,235,.4)" stroke-width="1"/>
+            </g>
+            <g transform="rotate(-3,95,315)" opacity=".6">
+              <rect x="75" y="308" width="38" height="22" rx="5" fill="url(#iceG)"/>
+              <rect x="78" y="311" width="9"  height="2"  rx="1.5" fill="rgba(255,255,255,.6)"/>
+            </g>
+          </g>
+
+          <!-- Açaí berries -->
+          <ellipse cx="78"  cy="198" rx="5"   ry="8"   fill="rgba(80,5,25,.6)"  transform="rotate(-20,78,198)"/>
+          <ellipse cx="126" cy="213" rx="4.5" ry="7"   fill="rgba(80,5,25,.55)" transform="rotate(14,126,213)"/>
+          <ellipse cx="93"  cy="237" rx="5"   ry="7.5" fill="rgba(80,5,25,.5)"  transform="rotate(-9,93,237)"/>
+          <ellipse cx="147" cy="190" rx="4"   ry="6.5" fill="rgba(80,5,25,.52)" transform="rotate(24,147,190)"/>
+          <ellipse cx="60"  cy="222" rx="3.5" ry="5.5" fill="rgba(80,5,25,.45)" transform="rotate(5,60,222)"/>
+          <ellipse cx="110" cy="247" rx="4.5" ry="7"   fill="rgba(80,5,25,.47)" transform="rotate(-14,110,247)"/>
+          <ellipse cx="158" cy="230" rx="3.5" ry="5.5" fill="rgba(80,5,25,.42)" transform="rotate(18,158,230)"/>
+
+          <!-- Bubbles -->
+          <circle id="bub1" cx="85"  cy="215" r="2.8" fill="rgba(255,180,200,.5)"/>
+          <circle id="bub2" cx="118" cy="232" r="2.2" fill="rgba(255,180,200,.45)"/>
+          <circle id="bub3" cx="68"  cy="248" r="1.8" fill="rgba(255,180,200,.4)"/>
+          <circle id="bub4" cx="145" cy="220" r="2"   fill="rgba(255,180,200,.38)"/>
+        </g>
+
+        <!-- Cup overlay / glass sheen -->
+        <path d="M22,32 L36,318 Q36,330 50,330 L150,330 Q164,330 164,318 L178,32 Z"
+              fill="url(#cupWall)" stroke="#d898b0" stroke-width="1.8"/>
+        <path d="M22,36 L33,290 Q34,302 40,308 L38,308 Q32,302 31,290 L20,36 Z" fill="rgba(255,255,255,.38)"/>
+        <path d="M178,36 L167,290 Q166,302 160,308 L162,308 Q168,302 169,290 L180,36 Z" fill="rgba(255,255,255,.2)"/>
+        <path d="M24,36 L34,120 Q100,108 166,120 L176,36 Z" fill="rgba(255,255,255,.11)"/>
+        <line x1="30" y1="96"  x2="170" y2="96"  stroke="rgba(190,110,140,.16)" stroke-width="1.2"/>
+        <line x1="32" y1="168" x2="168" y2="168" stroke="rgba(190,110,140,.13)" stroke-width="1"/>
+        <line x1="34" y1="242" x2="166" y2="242" stroke="rgba(190,110,140,.1)"  stroke-width="1"/>
+        <path d="M36,318 Q36,330 50,330 L150,330 Q164,330 164,318" fill="none" stroke="#c08098" stroke-width="2.2"/>
+        <ellipse cx="100" cy="332" rx="60" ry="5" fill="rgba(160,50,80,.14)"/>
+
+        <!-- Lid / straw band -->
+        <rect x="16" y="26" width="168" height="12" rx="6"    fill="rgba(255,248,250,.95)" stroke="#d898b0" stroke-width="1.5"/>
+        <rect x="14" y="15" width="172" height="15" rx="7.5"  fill="#cce8ce" stroke="#8ab58c" stroke-width="1.5"/>
+        <rect x="18" y="6"  width="164" height="13" rx="3"    fill="#ddf0de" stroke="#8ab58c" stroke-width="1.1"/>
+        <rect x="22" y="7"  width="156" height="10" rx="2.5"  fill="#eaf5ea"/>
+        <rect x="74" y="0"  width="56"  height="11" rx="4.5"  fill="#bfdfbf" stroke="#7aa07c" stroke-width="1.2"/>
+        <rect x="77" y="1.5" width="50" height="8"  rx="3.5"  fill="#ceeace"/>
+        <rect x="84" y="3.5" width="36" height="4"  rx="2"    fill="#3d7045" opacity=".65"/>
+        <rect x="85" y="4"   width="34" height="1.8" rx="1"   fill="rgba(255,255,255,.3)"/>
+        <path d="M74,5 Q68,3 64,6.5 Q62,9 66,10.5 Q70,12 74,10 Z" fill="#aed4ae" stroke="#7aa07c" stroke-width=".9"/>
+        <rect x="22" y="7"  width="48" height="5" rx="2" fill="rgba(255,255,255,.3)"/>
+        <line x1="22"  y1="11" x2="72"  y2="11" stroke="#b8d8ba" stroke-width=".5" opacity=".65"/>
+        <line x1="132" y1="11" x2="180" y2="11" stroke="#b8d8ba" stroke-width=".5" opacity=".65"/>
+        <rect x="24" y="27" width="152" height="3" rx="1.5" fill="#b4d0b6" opacity=".55"/>
+
+        <!-- Focus badge -->
+        <circle cx="100" cy="178" r="19" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width=".8"/>
+        <text x="100" y="182" text-anchor="middle" fill="rgba(255,255,255,.35)" font-size="7.5" font-family="serif">✦ FOCUS ✦</text>
+      </svg>
+    </div>
+
+    <div class="sessions">
+      <span class="session-label">Sips</span>
+      <div class="session-dot" id="dot0"></div>
+      <div class="session-dot" id="dot1"></div>
+      <div class="session-dot" id="dot2"></div>
+      <div class="session-dot" id="dot3"></div>
+    </div>
+
+    <div class="complete-msg" id="completeMsg">🍓 Session complete! Breathe &amp; sip.</div>
+  </div>
+
+  <!-- ── Tile 2: Timer ── -->
+  <div class="tile tile-timer">
+    <div class="tile-header">
+      <div class="tile-label">Timer</div>
+    </div>
+
+    <div class="progress-wrap">
+      <svg class="progress-svg" viewBox="0 0 186 186" width="140" height="140">
+        <defs>
+          <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#f472b6"/>
+            <stop offset="100%" stop-color="#e8445a"/>
+          </linearGradient>
+        </defs>
+        <circle class="progress-track" cx="93" cy="93" r="85"/>
+        <circle id="progress-arc" cx="93" cy="93" r="85" stroke-dasharray="534.07" stroke-dashoffset="0"/>
+      </svg>
+      <div style="position:relative;z-index:1;text-align:center;">
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="timer-label"  id="modeLabel">focus session</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-icon" id="resetBtn" title="Reset">↺</button>
+      <button type="button" class="btn btn-main" id="startBtn">Start Sipping</button>
+      <button class="btn btn-icon" id="skipBtn"  title="Skip Break">⏭</button>
+    </div>
+
+    <div class="dur-section">
+      <div class="dur-label-row">Quick Pick</div>
+      <div class="dur-tabs">
+        <button type="button" class="dur-btn" data-mins="5">5m</button>
+        <button type="button" class="dur-btn" data-mins="15">15m</button>
+        <button type="button" class="dur-btn active" data-mins="25">25m</button>
+        <button type="button" class="dur-btn" data-mins="45">45m</button>
+        <button type="button" class="dur-btn" data-mins="60">60m</button>
+      </div>
+    </div>
+
+    <div class="custom-block">
+      <div class="custom-title">Custom Duration</div>
+      <div class="custom-row">
+        <div class="time-field">
+          <label>hr</label>
+          <input class="time-input" id="customHr"  type="number" min="0" max="23" value="0"/>
+        </div>
+        <span class="time-sep">:</span>
+        <div class="time-field">
+          <label>min</label>
+          <input class="time-input" id="customMin" type="number" min="0" max="59" value="0"/>
+        </div>
+        <span class="time-sep">:</span>
+        <div class="time-field">
+          <label>sec</label>
+          <input class="time-input" id="customSec" type="number" min="0" max="59" value="0"/>
+        </div>
+        <button type="button" class="set-btn" id="setCustomBtn">Set</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tile 3: To-Do ── -->
+  <div class="tile tile-todo" id="todoPanel">
+    <div class="tile-header">
+      <div class="tile-label">To-Do</div>
+    </div>
+
+    <div class="todo-add-row">
+      <input type="text" id="todoNewInput" class="todo-input" placeholder="Add a task..."/>
+      <button type="button" id="todoAddBtn" class="btn-add">+</button>
+    </div>
+
+    <div class="todo-date-row">
+      <label class="todo-date-opt">
+        <input type="checkbox" id="todoRemindTomorrow"/>
+        <span>Tomorrow</span>
+      </label>
+      <input type="date" id="todoRemindDate" class="todo-date-input"/>
+    </div>
+
+    <div class="todo-sections">
+      <div class="todo-section">
+        <div class="todo-section-label">Today</div>
+        <div id="todoListToday"></div>
+      </div>
+      <div class="todo-section">
+        <div class="todo-section-label">Tomorrow</div>
+        <div id="todoListTomorrow"></div>
+      </div>
+      <div class="todo-section">
+        <div class="todo-section-label">Later</div>
+        <div id="todoListLater"></div>
+      </div>
+      <div class="todo-section">
+        <div class="todo-section-label done-label">
+          Done
+          <button type="button" id="todoClearDoneBtn" class="btn-text">Clear</button>
+        </div>
+        <div id="todoListDone"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tile 4: Log ── -->
+  <div class="tile tile-log">
+    <div class="tile-header">
+      <div class="tile-label">Today's Focus Log</div>
+      <button type="button" id="copyReportBtn" class="btn-text">Copy Report</button>
+    </div>
+
+    <div class="tile-log-body">
+      <div id="dayLogContent"></div>
+
+      <div class="integrations">
+        <div class="integration-section">
+          <div class="int-label">Slack Webhook</div>
+          <div class="int-row">
+            <input type="url" id="slackWebhookInput" class="int-input" placeholder="https://hooks.slack.com/services/..."/>
+            <button type="button" id="slackSaveUrlBtn" class="set-btn">Save</button>
+          </div>
+          <div id="slackSyncStatus" class="sync-status"></div>
+        </div>
+
+        <div class="integration-section">
+          <div class="int-label">Google Sheets URL</div>
+          <div class="int-row">
+            <input type="url" id="sheetWebhookInput" class="int-input" placeholder="https://script.google.com/macros/..."/>
+            <button type="button" id="sheetSaveUrlBtn" class="set-btn">Save</button>
+          </div>
+          <div id="sheetSyncStatus" class="sync-status"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Log Modal ── -->
+<div class="modal-overlay" id="logModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-title">Log this focus block</div>
+    <div class="modal-time" id="logTimeRange"></div>
+    <textarea id="logNoteInput" class="modal-note" placeholder="What did you accomplish? (optional)"></textarea>
+    <div class="modal-row">
+      <button type="button" id="logSkipBtn" class="btn-text">Skip</button>
+      <button type="button" id="logSaveBtn" class="btn btn-main">Save &amp; Continue</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let totalSeconds = 25 * 60;
+  let remaining    = totalSeconds;
+  let running      = false;
+  let interval     = null;
+  let sessions     = 0;
+  let isBreak      = false;
+  let focusSessionStart = null;
+
+  function stopTickInterval() {
+    if (interval !== null) { clearInterval(interval); interval = null; }
+  }
+
+  // ── Storage keys ───────────────────────────────────────────────────────────
+  const LOG_KEY          = 'focusFlowSessionLog_v1';
+  const SHEET_WEBHOOK_KEY = 'focusFlowSheetWebhookUrl';
+  const SLACK_WEBHOOK_KEY = 'focusFlowSlackWebhookUrl';
+  const TODO_KEY         = 'focusFlowTodos_v1';
+
+  // ── DOM refs ───────────────────────────────────────────────────────────────
+  const display     = document.getElementById('timerDisplay');
+  const modeLabel   = document.getElementById('modeLabel');
+  const startBtn    = document.getElementById('startBtn');
+  const resetBtn    = document.getElementById('resetBtn');
+  const skipBtn     = document.getElementById('skipBtn');
+  const liquidFill  = document.getElementById('liquid-fill');
+  const liquidSide  = document.getElementById('liquid-side');
+  const liquidRef   = document.getElementById('liquid-refract');
+  const waveGroup   = document.getElementById('wave-group');
+  const waveShadow  = document.getElementById('wave-shadow');
+  const waveMain    = document.getElementById('wave-main');
+  const waveCrest   = document.getElementById('wave-crest');
+  const foam1       = document.getElementById('foam1');
+  const foam2       = document.getElementById('foam2');
+  const foam3       = document.getElementById('foam3');
+  const progressArc = document.getElementById('progress-arc');
+  const completeMsg = document.getElementById('completeMsg');
+  const cupScene    = document.getElementById('cupScene');
+  const setCustomBtn = document.getElementById('setCustomBtn');
+
+  // ── Geometry ───────────────────────────────────────────────────────────────
+  const CIRC       = 534.07;
+  const CUP_TOP    = 32;
+  const CUP_BOTTOM = 318;
+  const CUP_HEIGHT = CUP_BOTTOM - CUP_TOP;
+  let bubbleY = [215, 232, 248, 220];
+
+  // ── Audio ──────────────────────────────────────────────────────────────────
+  let alarmAudioCtx = null;
+  function alarmContext() {
+    if (!alarmAudioCtx)
+      alarmAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return alarmAudioCtx;
+  }
+  function primeAlarmAudio() {
+    const c = alarmContext();
+    if (c.state === 'suspended') c.resume().catch(() => {});
+  }
+  function playCompletionAlarm() {
+    try {
+      const ctx = alarmContext();
+      const ALARM_TOTAL = 3, BEEP_COUNT = 9, beepDur = 0.14;
+      const step = (ALARM_TOTAL - beepDur) / (BEEP_COUNT - 1);
+      const beep = (start, freq) => {
+        const osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.0001, start);
+        g.gain.exponentialRampToValueAtTime(0.13, start + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + beepDur);
+        osc.start(start); osc.stop(start + beepDur + 0.02);
+      };
+      const run = t0 => { for (let i = 0; i < BEEP_COUNT; i++) beep(t0 + i * step, i % 2 === 0 ? 880 : 700); };
+      ctx.state === 'suspended' ? ctx.resume().then(() => run(ctx.currentTime)).catch(() => {}) : run(ctx.currentTime);
+    } catch (e) {}
+  }
+
+  // ── Utilities ──────────────────────────────────────────────────────────────
+  function fmtHMS(date) {
+    const h = date.getHours(), ampm = h >= 12 ? 'PM' : 'AM';
+    return (h % 12 || 12) + ':' +
+           String(date.getMinutes()).padStart(2,'0') + ':' +
+           String(date.getSeconds()).padStart(2,'0') + ' ' + ampm;
+  }
+
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function tomorrowDateKey() {
+    const d = new Date(); d.setDate(d.getDate() + 1);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function escapeHtml(s) {
+    const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+  }
+
+  // ── Session log ────────────────────────────────────────────────────────────
+  function addLogEntry({ startIso, endIso, durationSec, note }) {
+    let id;
+    try { id = crypto.randomUUID(); } catch (e) { id = String(Date.now()) + '-' + Math.random().toString(16).slice(2); }
+    const entry = {
+      id, startIso, endIso, durationSec,
+      durationMin: Math.round(durationSec / 60 * 10) / 10,
+      note: note || '',
+      dayKey: todayKey(),
+      createdIso: new Date().toISOString()
+    };
+    const all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    all.push(entry);
+    localStorage.setItem(LOG_KEY, JSON.stringify(all));
+    syncEntryToGoogleSheet(entry);
+    syncEntryToSlack(entry);
+    return entry;
+  }
+
+  // ── Google Sheets ──────────────────────────────────────────────────────────
+  function getSheetWebhookUrl() { return (localStorage.getItem(SHEET_WEBHOOK_KEY) || '').trim(); }
+  function setSheetStatus(msg, isErr) {
+    const el = document.getElementById('sheetSyncStatus');
+    if (!el) return;
+    el.textContent = msg; el.style.color = isErr ? '#b03a50' : '#2d6a3e';
+    if (el._timer) clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.textContent = ''; }, 8000);
+  }
+  function syncEntryToGoogleSheet(entry) {
+    const url = getSheetWebhookUrl(); if (!url) return;
+    fetch(url, { method: 'POST', body: JSON.stringify(entry), headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(() => setSheetStatus('Appended to Google Sheet.', false))
+      .catch(() => setSheetStatus('Google Sheet not updated — check URL or network.', true));
+  }
+
+  // ── Slack ──────────────────────────────────────────────────────────────────
+  function getSlackWebhookUrl() { return (localStorage.getItem(SLACK_WEBHOOK_KEY) || '').trim(); }
+  function setSlackStatus(msg, isErr) {
+    const el = document.getElementById('slackSyncStatus');
+    if (!el) return;
+    el.textContent = msg; el.style.color = isErr ? '#b03a50' : '#2d6a3e';
+    if (el._timer) clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.textContent = ''; }, 8000);
+  }
+  function syncEntryToSlack(entry) {
+    const url = getSlackWebhookUrl(); if (!url) return;
+    const start = new Date(entry.startIso), end = new Date(entry.endIso);
+    const timeRange = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) +
+                      ' \u2013 ' + end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const noteText = entry.note ? '\n>' + entry.note : '';
+    const text = '\u2705 *Focus Block* \u2014 ' + entry.durationMin + ' min (' + timeRange + ')' + noteText;
+    fetch(url, { method: 'POST', body: JSON.stringify({ text }), headers: { 'Content-Type': 'application/json' } })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(() => setSlackStatus('Sent to Slack!', false))
+      .catch(() => setSlackStatus('Slack not updated \u2014 check webhook URL.', true));
+  }
+
+  // ── To-Do ──────────────────────────────────────────────────────────────────
+  function formatTodoDate(key) {
+    if (!key) return '';
+    return new Date(key + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  function getTodos() { return JSON.parse(localStorage.getItem(TODO_KEY) || '[]'); }
+  function saveTodos(arr) { localStorage.setItem(TODO_KEY, JSON.stringify(arr)); }
+
+  function todoItemHtml(t) {
+    const badge = t.remindDate ? '<span class="todo-badge">' + escapeHtml(formatTodoDate(t.remindDate)) + '</span>' : '';
+    if (t.done) {
+      return '<div class="todo-item todo-item-done" data-id="' + escapeHtml(t.id) + '">'
+        + '<label class="todo-row-label"><input type="checkbox" class="todo-cb" checked/>'
+        + '<span class="todo-text todo-text-done">' + escapeHtml(t.text) + '</span></label>'
+        + '<button type="button" class="btn-text todo-act todo-del" data-act="del" data-id="' + escapeHtml(t.id) + '">Remove</button>'
+        + '</div>';
+    }
+    return '<div class="todo-item" data-id="' + escapeHtml(t.id) + '">'
+      + '<label class="todo-row-label"><input type="checkbox" class="todo-cb"/>'
+      + '<span class="todo-text">' + escapeHtml(t.text) + '</span></label>'
+      + badge
+      + '<div class="todo-actions">'
+      + '<button type="button" class="btn-text todo-act" data-act="tomorrow" data-id="' + escapeHtml(t.id) + '">Tomorrow</button>'
+      + '<button type="button" class="btn-text todo-act" data-act="today"    data-id="' + escapeHtml(t.id) + '">Today</button>'
+      + '<button type="button" class="btn-text todo-act todo-del" data-act="del" data-id="' + escapeHtml(t.id) + '">Remove</button>'
+      + '</div></div>';
+  }
+
+  function renderTodos() {
+    const tk = todayKey(), tm = tomorrowDateKey(), todos = getTodos();
+    const active   = todos.filter(t => !t.done);
+    const doneList = todos.filter(t =>  t.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
+    const todayList    = active.filter(t => !t.remindDate || t.remindDate <= tk);
+    const tomorrowList = active.filter(t => t.remindDate === tm);
+    const laterList    = active.filter(t => t.remindDate && t.remindDate > tm);
+
+    function fill(id, list, emptyMsg) {
+      const el = document.getElementById(id); if (!el) return;
+      el.innerHTML = list.length ? list.map(todoItemHtml).join('') : '<p class="todo-empty">' + emptyMsg + '</p>';
+    }
+    fill('todoListToday',    todayList,    'Nothing for today — add a task above.');
+    fill('todoListTomorrow', tomorrowList, 'No tasks scheduled for tomorrow.');
+    fill('todoListLater',    laterList,    'No tasks scheduled further out.');
+    fill('todoListDone',     doneList,     'No completed tasks yet.');
+  }
+
+  function initTodoPanel() {
+    const panel  = document.getElementById('todoPanel');    if (!panel) return;
+    const input  = document.getElementById('todoNewInput');
+    const addBtn = document.getElementById('todoAddBtn');
+    const dateIn = document.getElementById('todoRemindDate');
+    const cbTom  = document.getElementById('todoRemindTomorrow');
+    const clearDone = document.getElementById('todoClearDoneBtn');
+
+    function doAdd() {
+      const text = (input && input.value || '').trim(); if (!text) return;
+      let rd = dateIn && dateIn.value ? dateIn.value : null;
+      if (!rd && cbTom && cbTom.checked) rd = tomorrowDateKey();
+      let id;
+      try { id = crypto.randomUUID(); } catch (e) { id = String(Date.now()) + '-' + Math.random().toString(16).slice(2); }
+      const todos = getTodos();
+      todos.push({ id, text, done: false, createdIso: new Date().toISOString(), remindDate: rd });
+      saveTodos(todos);
+      if (input) input.value = '';
+      if (cbTom) cbTom.checked = false;
+      if (dateIn) dateIn.value = '';
+      renderTodos();
+    }
+
+    if (addBtn) addBtn.addEventListener('click', doAdd);
+    if (input)  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+    if (clearDone) clearDone.addEventListener('click', () => { saveTodos(getTodos().filter(t => !t.done)); renderTodos(); });
+
+    panel.addEventListener('change', e => {
+      const c = e.target; if (!c.classList.contains('todo-cb')) return;
+      const row = c.closest('.todo-item'), id = row && row.getAttribute('data-id'); if (!id) return;
+      const todos = getTodos(), t = todos.find(x => x.id === id); if (!t) return;
+      t.done = c.checked; t.doneAt = c.checked ? new Date().toISOString() : null;
+      saveTodos(todos); renderTodos();
+    });
+
+    panel.addEventListener('click', e => {
+      const b = e.target.closest('.todo-act'); if (!b) return;
+      const id = b.getAttribute('data-id'), act = b.getAttribute('data-act'); if (!id || !act) return;
+      const todos = getTodos(), t = todos.find(x => x.id === id);
+      if (act === 'del') { saveTodos(todos.filter(x => x.id !== id)); }
+      else if (t && act === 'tomorrow') { t.remindDate = tomorrowDateKey(); saveTodos(todos); }
+      else if (t && act === 'today')    { t.remindDate = null; saveTodos(todos); }
+      renderTodos();
+    });
+
+    if (dateIn && cbTom) {
+      dateIn.addEventListener('change', () => { if (dateIn.value) cbTom.checked = false; });
+      cbTom.addEventListener('change',  () => { if (cbTom.checked) dateIn.value = ''; });
+    }
+  }
+
+  // ── Day log rendering ──────────────────────────────────────────────────────
+  function formatHourLabel(hour, count) {
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const h = hour % 12 || 12;
+    return h + ':00 ' + ampm + ' · ' + count + ' block' + (count === 1 ? '' : 's');
+  }
+
+  function deleteLogEntry(id) {
+    const all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    localStorage.setItem(LOG_KEY, JSON.stringify(all.filter(e => e.id !== id)));
+    renderDayLog();
+  }
+
+  function renderDayLog() {
+    const host = document.getElementById('dayLogContent'); if (!host) return;
+    const key = todayKey();
+    const all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    const today = all.filter(e => e.dayKey === key).sort((a, b) => a.startIso.localeCompare(b.startIso));
+    if (today.length === 0) {
+      host.innerHTML = '<p class="day-log-empty">No focus blocks yet today. Finish a session to add one.</p>'; return;
+    }
+    const byHour = {};
+    today.forEach(e => { const h = new Date(e.startIso).getHours(); if (!byHour[h]) byHour[h] = []; byHour[h].push(e); });
+    let html = '';
+    Object.keys(byHour).map(Number).sort((a,b) => a-b).forEach(h => {
+      const list = byHour[h];
+      html += '<div class="hour-block"><div class="hour-label">' + escapeHtml(formatHourLabel(h, list.length)) + '</div>';
+      list.forEach(e => {
+        const st = new Date(e.startIso), en = new Date(e.endIso);
+        const tr = fmtHMS(st) + ' \u2013 ' + fmtHMS(en);
+        const noteHtml = e.note ? escapeHtml(e.note) : '<span class="muted">(no note)</span>';
+        html += '<div class="log-entry" data-id="' + escapeHtml(e.id) + '"><span class="log-entry-time">' + tr + '</span><span class="log-entry-dur">' + e.durationMin + ' min</span><button class="log-entry-del" title="Remove entry">&times;</button><p class="log-entry-note">' + noteHtml + '</p></div>';
+      });
+      html += '</div>';
+    });
+    host.innerHTML = html;
+    host.querySelectorAll('.log-entry-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.closest('.log-entry').getAttribute('data-id');
+        if (id) deleteLogEntry(id);
+      });
+    });
+  }
+
+  function buildDayReportText() {
+    const key = todayKey();
+    const all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    const today = all.filter(e => e.dayKey === key).sort((a,b) => a.startIso.localeCompare(b.startIso));
+    let lines = ['Focus Flow \u2014 ' + key, ''];
+    if (today.length === 0) return lines.join('\n') + 'No entries today.\n';
+    const byHour = {};
+    today.forEach(e => { const h = new Date(e.startIso).getHours(); if (!byHour[h]) byHour[h] = []; byHour[h].push(e); });
+    Object.keys(byHour).map(Number).sort((a,b) => a-b).forEach(h => {
+      lines.push('\u2014\u2014 ' + formatHourLabel(h, byHour[h].length) + ' \u2014\u2014');
+      byHour[h].forEach(e => {
+        const st = new Date(e.startIso), en = new Date(e.endIso);
+        const tr = fmtHMS(st) + ' \u2013 ' + fmtHMS(en);
+        lines.push(tr + ' | ' + e.durationMin + ' min | ' + (e.note || '(no note)'));
+      });
+      lines.push('');
+    });
+    return lines.join('\n').trim() + '\n';
+  }
+
+  // ── Break / session flow ───────────────────────────────────────────────────
+  function beginBreakAfterFocus() {
+    isBreak = true; totalSeconds = 5 * 60; remaining = totalSeconds;
+    modeLabel.textContent = 'break time \uD83C\uDF53';
+    display.style.color = '#2d6a3e';
+    updateDisplay(); completeMsg.classList.remove('show');
+    startBtn.textContent = 'Start Break';
+  }
+
+  function showFocusLogPrompt(startIso, endIso, durationSec, onDone) {
+    const modal   = document.getElementById('logModal');
+    const note    = document.getElementById('logNoteInput');
+    const span    = document.getElementById('logTimeRange');
+    const saveBtn = document.getElementById('logSaveBtn');
+    const skipBtnM = document.getElementById('logSkipBtn');
+    if (!modal || !note || !saveBtn || !skipBtnM) { onDone(); return; }
+    note.value = '';
+    const fmt = iso => new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    span.textContent = fmt(startIso) + ' \u2013 ' + fmt(endIso) + ' \u00B7 ' + Math.round(durationSec / 60) + ' min focus';
+    modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); note.focus();
+    const done = () => {
+      saveBtn.onclick = null; skipBtnM.onclick = null; note.onkeydown = null;
+      modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); onDone();
+    };
+    saveBtn.onclick = () => { addLogEntry({ startIso, endIso, durationSec, note: note.value.trim() }); renderDayLog(); done(); };
+    skipBtnM.onclick = () => done();
+    note.onkeydown = e => {
+      if (e.key === 'Escape') { e.preventDefault(); done(); }
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveBtn.click(); }
+    };
+  }
+
+  // ── Display helpers ────────────────────────────────────────────────────────
+  function progressRatio() { return Math.max(0, Math.min(1, remaining / Math.max(totalSeconds, 1))); }
+
+  function updateLiquid() {
+    const pct = progressRatio();
+    const lh = CUP_HEIGHT * pct, ly = CUP_BOTTOM - lh;
+    [liquidFill, liquidSide, liquidRef].forEach(el => { el.setAttribute('y', ly); el.setAttribute('height', lh); });
+    waveGroup.setAttribute('transform', `translate(0, ${ly - 12})`);
+    waveGroup.style.opacity = pct < 0.02 ? '0' : '1';
+  }
+
+  function animateWave(ts) {
+    const t = ts / 1000;
+    const a1 = Math.sin(t * 0.9) * 4.5, a2 = Math.cos(t * 1.2) * 3.8;
+    const a3 = Math.sin(t * 0.7 + 1) * 3, a4 = Math.cos(t * 1.5) * 2.5;
+    waveShadow.setAttribute('d', `M0,${14+a2} C28,${8+a1} 58,${22+a2} 86,${14+a3} C114,${6+a2} 140,${20+a1} 166,${14+a4} C180,${10+a2} 192,${17+a3} 200,${14+a1} L200,30 L0,30 Z`);
+    waveMain.setAttribute('d',   `M0,${10+a1} C24,${4+a2} 52,${18+a1} 78,${10+a3} C104,${2+a2} 130,${18+a1} 156,${10+a4} C172,${5+a3} 188,${14+a2} 200,${10+a1} L200,23 L0,23 Z`);
+    waveCrest.setAttribute('d',  `M0,${11+a3} C26,${7+a1} 54,${15+a3} 80,${11+a2} C106,${7+a3} 132,${15+a1} 158,${11+a4} C174,${8+a2} 190,${13+a3} 200,${11+a2} L200,16 L0,16 Z`);
+    foam1.setAttribute('cx', 40 + Math.sin(t * 1.1) * 5);
+    foam2.setAttribute('cx', 110 + Math.cos(t * 0.9) * 7);
+    foam3.setAttribute('cx', 168 + Math.sin(t * 1.3) * 4);
+    const pct = progressRatio(), baseY = CUP_BOTTOM - CUP_HEIGHT * pct + 20, resetY = CUP_BOTTOM - 12;
+    ['bub1','bub2','bub3','bub4'].forEach((id, i) => {
+      bubbleY[i] -= [0.18, 0.13, 0.10, 0.15][i];
+      if (bubbleY[i] < baseY) bubbleY[i] = resetY;
+      const el = document.getElementById(id); if (el) el.setAttribute('cy', bubbleY[i]);
+    });
+    requestAnimationFrame(animateWave);
+  }
+
+  function updateProgress() { progressArc.style.strokeDashoffset = CIRC * (1 - progressRatio()); }
+
+  function updateDisplay() {
+    const h = Math.floor(remaining / 3600), m = Math.floor((remaining % 3600) / 60), s = remaining % 60;
+    display.textContent = h > 0
+      ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+      : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    updateLiquid(); updateProgress();
+  }
+
+  function updateDots() {
+    for (let i = 0; i < 4; i++) document.getElementById('dot'+i).classList.toggle('done', i < sessions);
+  }
+
+  // ── Custom duration helpers ────────────────────────────────────────────────
+  function readDurationSeconds() {
+    const h = parseInt(document.getElementById('customHr').value, 10) || 0;
+    const m = parseInt(document.getElementById('customMin').value, 10) || 0;
+    const s = parseInt(document.getElementById('customSec').value, 10) || 0;
+    return h * 3600 + m * 60 + s;
+  }
+
+  function applyFocusDurationFromInputs() {
+    if (running) return false;
+    const total = readDurationSeconds(); if (total <= 0) return false;
+    totalSeconds = total; remaining = total; isBreak = false; focusSessionStart = null;
+    modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
+    startBtn.textContent = 'Start Sipping'; completeMsg.classList.remove('show');
+    updateDisplay(); return true;
+  }
+
+  // ── Tick ──────────────────────────────────────────────────────────────────
+  function tick() {
+    if (remaining <= 0) {
+      stopTickInterval(); running = false; playCompletionAlarm();
+      startBtn.textContent = 'Start Sipping'; completeMsg.classList.add('show');
+      if (!isBreak) {
+        sessions = Math.min(sessions + 1, 4); updateDots();
+        const sessStart = focusSessionStart || new Date(Date.now() - Math.max(1, totalSeconds) * 1000).toISOString();
+        const sessEnd   = new Date().toISOString();
+        const actualSec = Math.max(1, Math.round((new Date(sessEnd) - new Date(sessStart)) / 1000));
+        focusSessionStart = null;
+        setTimeout(() => {
+          completeMsg.classList.remove('show');
+          showFocusLogPrompt(sessStart, sessEnd, actualSec, () => { beginBreakAfterFocus(); });
+        }, 1600);
+      } else {
+        isBreak = false;
+        const t = readDurationSeconds(); totalSeconds = t > 0 ? t : 25 * 60; remaining = totalSeconds;
+        modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
+        setTimeout(() => { updateDisplay(); completeMsg.classList.remove('show'); startBtn.textContent = 'Start Sipping'; }, 2200);
+      }
+      return;
+    }
+    remaining--; updateDisplay();
+  }
+
+  // ── Button events ──────────────────────────────────────────────────────────
+  startBtn.addEventListener('click', () => {
+    if (running) {
+      stopTickInterval(); running = false; startBtn.textContent = 'Resume Sipping';
+    } else {
+      const lm = document.getElementById('logModal');
+      if (lm && lm.classList.contains('show')) return;
+      primeAlarmAudio(); completeMsg.classList.remove('show');
+      if (!isBreak && remaining <= 0) {
+        const from = readDurationSeconds(); totalSeconds = from > 0 ? from : 25 * 60;
+        remaining = totalSeconds; focusSessionStart = null; updateDisplay();
+      }
+      if (isBreak && remaining <= 0) { totalSeconds = 5 * 60; remaining = totalSeconds; updateDisplay(); }
+      if (!isBreak) {
+        const from = readDurationSeconds();
+        if (from > 0 && remaining === totalSeconds) { totalSeconds = from; remaining = from; updateDisplay(); }
+        if (!focusSessionStart) focusSessionStart = new Date().toISOString();
+      }
+      stopTickInterval(); interval = setInterval(tick, 1000); running = true; startBtn.textContent = 'Pause';
+    }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && running) { stopTickInterval(); running = false; startBtn.textContent = 'Resume Sipping'; }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    stopTickInterval(); running = false; isBreak = false; focusSessionStart = null;
+    const t = readDurationSeconds(); totalSeconds = t > 0 ? t : 25 * 60; remaining = totalSeconds;
+    modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
+    startBtn.textContent = 'Start Sipping'; completeMsg.classList.remove('show'); updateDisplay();
+  });
+
+  skipBtn.addEventListener('click', () => {
+    if (!isBreak) return;
+    stopTickInterval(); running = false; isBreak = false; focusSessionStart = null;
+    const t = readDurationSeconds(); totalSeconds = t > 0 ? t : 25 * 60; remaining = totalSeconds;
+    modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
+    startBtn.textContent = 'Start Sipping'; completeMsg.classList.remove('show'); updateDisplay();
+  });
+
+  setCustomBtn.addEventListener('click', () => {
+    if (!applyFocusDurationFromInputs()) document.getElementById('customMin').focus();
+  });
+
+  ['customHr','customMin','customSec'].forEach(id =>
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') setCustomBtn.click(); })
+  );
+
+  // Quick pick duration buttons
+  document.querySelectorAll('.dur-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (running) return;
+      const mins = parseInt(btn.getAttribute('data-mins'), 10);
+      document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('customHr').value  = 0;
+      document.getElementById('customMin').value = mins;
+      document.getElementById('customSec').value = 0;
+      totalSeconds = mins * 60; remaining = totalSeconds; isBreak = false; focusSessionStart = null;
+      modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
+      startBtn.textContent = 'Start Sipping'; completeMsg.classList.remove('show');
+      updateDisplay();
+    });
+  });
+
+  // Cup sip ripple
+  cupScene.addEventListener('click', e => {
+    const rect = cupScene.getBoundingClientRect();
+    const rip = document.createElement('div');
+    rip.className = 'sip-ripple';
+    rip.style.left = (e.clientX - rect.left - 18) + 'px';
+    rip.style.top  = (e.clientY - rect.top  - 18) + 'px';
+    cupScene.appendChild(rip); setTimeout(() => rip.remove(), 700);
+  });
+
+  // ── Integration save buttons ───────────────────────────────────────────────
+  const sheetInput   = document.getElementById('sheetWebhookInput');
+  const sheetSaveBtn = document.getElementById('sheetSaveUrlBtn');
+  if (sheetInput) sheetInput.value = getSheetWebhookUrl();
+  if (sheetSaveBtn && sheetInput) {
+    sheetSaveBtn.addEventListener('click', () => {
+      const v = sheetInput.value.trim();
+      localStorage.setItem(SHEET_WEBHOOK_KEY, v);
+      setSheetStatus(v ? 'Google Sheet URL saved.' : 'URL cleared.', false);
+    });
+  }
+
+  const slackInput   = document.getElementById('slackWebhookInput');
+  const slackSaveBtn = document.getElementById('slackSaveUrlBtn');
+  if (slackInput) slackInput.value = getSlackWebhookUrl();
+  if (slackSaveBtn && slackInput) {
+    slackSaveBtn.addEventListener('click', () => {
+      const v = slackInput.value.trim();
+      localStorage.setItem(SLACK_WEBHOOK_KEY, v);
+      setSlackStatus(v ? 'Slack webhook saved! Logs will post when sessions complete.' : 'URL cleared.', false);
+    });
+  }
+
+  const copyReportBtn = document.getElementById('copyReportBtn');
+  if (copyReportBtn) {
+    copyReportBtn.addEventListener('click', () => {
+      const text = buildDayReportText();
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(text).catch(() => window.prompt('Copy this report:', text));
+      else
+        window.prompt('Copy this report:', text);
+    });
+  }
+
+  // ── Ambient decoration ─────────────────────────────────────────────────────
+  for (let i = 0; i < 14; i++) {
+    const d = document.createElement('div'); d.className = 'drop';
+    d.style.left = (28 + Math.random() * 144) + 'px';
+    d.style.top  = (70 + Math.random() * 190) + 'px';
+    d.style.height = (3 + Math.random() * 9) + 'px';
+    const dur = 3.5 + Math.random() * 6;
+    d.style.animationDuration = dur + 's'; d.style.animationDelay = (-Math.random() * dur) + 's';
+    cupScene.appendChild(d);
+  }
+  // ── Star field ────────────────────────────────────────────────────────────
+  (function() {
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const STAR_COUNT = 400;
+    const STAR_COLORS = [
+      [255,255,255], // white
+      [200,220,255], // blue-white
+      [180,200,255], // pale blue
+      [255,240,210], // warm white
+      [255,210,180], // faint orange
+      [210,180,255], // lavender
+    ];
+
+    function mkStar() {
+      return {
+        x:   (Math.random() - 0.5) * 2,
+        y:   (Math.random() - 0.5) * 2,
+        z:   Math.random(),
+        pz:  null,
+        col: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+        sz:  0.4 + Math.random() * 1.6,
+      };
+    }
+
+    const stars = Array.from({ length: STAR_COUNT }, () => {
+      const s = mkStar(); s.z = Math.random(); return s;
+    });
+
+    const SPEED = 0.007;
+
+    function frame() {
+      const w = canvas.width, h = canvas.height;
+      const cx = w / 2, cy = h / 2;
+
+      // Deep space fade — keeps streaks short
+      ctx.fillStyle = 'rgba(2,4,18,0.3)';
+      ctx.fillRect(0, 0, w, h);
+
+      for (const s of stars) {
+        const pz  = s.pz !== null ? s.pz : s.z;
+        const sx  = (s.x / s.z)  * cx + cx;
+        const sy  = (s.y / s.z)  * cy + cy;
+        const px  = (s.x / pz)   * cx + cx;
+        const py  = (s.y / pz)   * cy + cy;
+        const brt = 1 - s.z;
+        const r   = s.col[0], g = s.col[1], b = s.col[2];
+
+        // Streak / trail
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(${r},${g},${b},${(brt * 0.85).toFixed(2)})`;
+        ctx.lineWidth   = Math.max(0.3, brt * s.sz * 0.8);
+        ctx.moveTo(px, py);
+        ctx.lineTo(sx, sy);
+        ctx.stroke();
+
+        // Star core
+        const coreR = Math.max(0.3, brt * s.sz * 0.55);
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${r},${g},${b},${Math.min(1, brt + 0.2).toFixed(2)})`;
+        ctx.arc(sx, sy, coreR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Glow on bright close stars
+        if (brt > 0.75 && s.sz > 1.2) {
+          const grd = ctx.createRadialGradient(sx, sy, 0, sx, sy, coreR * 5);
+          grd.addColorStop(0, `rgba(${r},${g},${b},0.25)`);
+          grd.addColorStop(1, `rgba(${r},${g},${b},0)`);
+          ctx.beginPath();
+          ctx.fillStyle = grd;
+          ctx.arc(sx, sy, coreR * 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        s.pz = s.z;
+        s.z -= SPEED;
+
+        if (s.z <= 0.005 || sx < -50 || sx > w + 50 || sy < -50 || sy > h + 50) {
+          Object.assign(s, mkStar());
+          s.z  = 0.98 + Math.random() * 0.02; // spawn far away
+          s.pz = null;
+        }
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    ctx.fillStyle = '#020412';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    requestAnimationFrame(frame);
+  })();
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  updateDisplay();
+  updateDots();
+  renderDayLog();
+  renderTodos();
+  initTodoPanel();
+  requestAnimationFrame(animateWave);
+</script>
+</body>
+</html>
