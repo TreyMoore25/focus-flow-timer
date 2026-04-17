@@ -534,6 +534,15 @@
     .log-entry-note { font-size: .78rem; color: #6a7080; grid-column: 1 / -1; margin-top: 3px; }
     .muted { color: #c0b0b8; font-style: italic; }
 
+    /* Weekly summary */
+    .week-day { margin-bottom: 14px; }
+    .week-day-label { font-size: .65rem; letter-spacing: 2px; text-transform: uppercase; color: #c0a0b0; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .week-day-label span { color: var(--accent); font-weight: 600; }
+    .week-bar-wrap { background: #fde8ec; border-radius: 20px; height: 8px; overflow: hidden; margin-bottom: 4px; }
+    .week-bar { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 20px; transition: width .4s ease; }
+    .week-empty { font-size: .78rem; color: #c0b0b8; font-style: italic; }
+    .week-total { font-size: .72rem; color: #b07090; text-align: right; margin-top: 8px; border-top: 1px solid #f0e0e8; padding-top: 8px; }
+
     /* Integrations */
     .integrations {
       border-left: 1px solid #f0e0e8;
@@ -888,7 +897,10 @@
   <div class="tile tile-log">
     <div class="tile-header">
       <div class="tile-label">Today's Focus Log</div>
-      <button type="button" id="copyReportBtn" class="btn-text">Copy Report</button>
+      <div style="display:flex;gap:10px;">
+        <button type="button" id="weeklyBtn" class="btn-text">This Week</button>
+        <button type="button" id="copyReportBtn" class="btn-text">Copy Report</button>
+      </div>
     </div>
 
     <div class="tile-log-body">
@@ -917,6 +929,20 @@
   </div>
 
 </main>
+
+<!-- ── Weekly Summary Modal ── -->
+<div class="modal-overlay" id="weeklyModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-card" style="max-width:520px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="modal-title">This Week</div>
+      <button type="button" id="weeklyCloseBtn" class="btn-text" style="font-size:.9rem;">✕</button>
+    </div>
+    <div id="weeklyContent" style="max-height:420px;overflow-y:auto;"></div>
+    <div class="modal-row" style="justify-content:flex-end;">
+      <button type="button" id="copyWeeklyBtn" class="btn btn-main" style="font-size:.82rem;padding:10px 22px;">Copy Weekly Report</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Log Modal ── -->
 <div class="modal-overlay" id="logModal" role="dialog" aria-modal="true" aria-hidden="true">
@@ -1442,6 +1468,100 @@
     rip.style.top  = (e.clientY - rect.top  - 18) + 'px';
     cupScene.appendChild(rip); setTimeout(() => rip.remove(), 700);
   });
+
+  // ── Weekly summary ────────────────────────────────────────────────────────
+  function getWeekDays() {
+    const days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      days.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'));
+    }
+    return days;
+  }
+
+  function buildWeeklyData() {
+    const all  = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    const days = getWeekDays();
+    return days.map(key => {
+      const entries = all.filter(e => e.dayKey === key);
+      const totalMin = entries.reduce((s, e) => s + (e.durationMin || 0), 0);
+      return { key, entries, totalMin: Math.round(totalMin * 10) / 10 };
+    });
+  }
+
+  function renderWeekly() {
+    const host = document.getElementById('weeklyContent');
+    if (!host) return;
+    const data   = buildWeeklyData();
+    const maxMin = Math.max(...data.map(d => d.totalMin), 1);
+    const totalWeek = Math.round(data.reduce((s,d) => s + d.totalMin, 0) * 10) / 10;
+
+    let html = '';
+    data.forEach(({ key, entries, totalMin }) => {
+      const date  = new Date(key + 'T12:00:00');
+      const label = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      const pct   = (totalMin / maxMin * 100).toFixed(1);
+      const isToday = key === todayKey();
+      html += '<div class="week-day">'
+        + '<div class="week-day-label">'
+        + escapeHtml(label) + (isToday ? ' <em style="color:#b07090;font-style:normal;">(today)</em>' : '')
+        + '<span>' + (totalMin > 0 ? totalMin + ' min' : '—') + '</span>'
+        + '</div>';
+      if (totalMin > 0) {
+        html += '<div class="week-bar-wrap"><div class="week-bar" style="width:' + pct + '%"></div></div>';
+        html += '<div style="font-size:.72rem;color:#a0a8b0;">' + entries.length + ' block' + (entries.length === 1 ? '' : 's') + '</div>';
+      } else {
+        html += '<div class="week-empty">No sessions</div>';
+      }
+      html += '</div>';
+    });
+
+    html += '<div class="week-total">Week total: <strong>' + totalWeek + ' min</strong> across ' + data.reduce((s,d) => s + d.entries.length, 0) + ' blocks</div>';
+    host.innerHTML = html;
+  }
+
+  function buildWeeklyReportText() {
+    const data = buildWeeklyData();
+    const totalWeek = Math.round(data.reduce((s,d) => s + d.totalMin, 0) * 10) / 10;
+    let lines = ['Focus Flow — Weekly Summary', ''];
+    data.forEach(({ key, entries, totalMin }) => {
+      const date  = new Date(key + 'T12:00:00');
+      const label = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      lines.push(label + ' — ' + (totalMin > 0 ? totalMin + ' min, ' + entries.length + ' block' + (entries.length===1?'':'s') : 'no sessions'));
+    });
+    lines.push('', 'Week total: ' + totalWeek + ' min');
+    return lines.join('\n');
+  }
+
+  const weeklyBtn   = document.getElementById('weeklyBtn');
+  const weeklyModal = document.getElementById('weeklyModal');
+  const weeklyClose = document.getElementById('weeklyCloseBtn');
+  const copyWeekly  = document.getElementById('copyWeeklyBtn');
+
+  if (weeklyBtn && weeklyModal) {
+    weeklyBtn.addEventListener('click', () => {
+      renderWeekly();
+      weeklyModal.classList.add('show');
+      weeklyModal.setAttribute('aria-hidden', 'false');
+    });
+    weeklyClose.addEventListener('click', () => {
+      weeklyModal.classList.remove('show');
+      weeklyModal.setAttribute('aria-hidden', 'true');
+    });
+    weeklyModal.addEventListener('click', e => {
+      if (e.target === weeklyModal) { weeklyModal.classList.remove('show'); weeklyModal.setAttribute('aria-hidden','true'); }
+    });
+  }
+  if (copyWeekly) {
+    copyWeekly.addEventListener('click', () => {
+      const text = buildWeeklyReportText();
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(text).catch(() => window.prompt('Copy:', text));
+      else window.prompt('Copy:', text);
+    });
+  }
 
   // ── Integration save buttons ───────────────────────────────────────────────
   const sheetInput   = document.getElementById('sheetWebhookInput');
