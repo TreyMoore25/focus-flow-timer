@@ -429,17 +429,11 @@
     .todo-item:hover { background: rgba(255,240,248,.95); }
     .todo-item-done { opacity: .6; }
 
-    .todo-row-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex: 1;
-      cursor: pointer;
-      min-width: 0;
-    }
-    .todo-cb { cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+    .todo-check { color: var(--accent); flex-shrink: 0; font-size: .85rem; }
 
     .todo-text {
+      flex: 1;
+      min-width: 0;
       font-size: .82rem;
       color: var(--berry);
       white-space: nowrap;
@@ -447,6 +441,19 @@
       text-overflow: ellipsis;
     }
     .todo-text-done { text-decoration: line-through; color: #a0a8b0; }
+
+    .todo-item-progress { border-color: #f0a8c0; background: rgba(255,235,244,.9); }
+    .todo-progress-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(232,68,90,.5);
+      animation: todoProgressPulse 1.6s ease-out infinite;
+    }
+    @keyframes todoProgressPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(232,68,90,.5); }
+      70%  { box-shadow: 0 0 0 6px rgba(232,68,90,0); }
+      100% { box-shadow: 0 0 0 0 rgba(232,68,90,0); }
+    }
 
     .todo-badge {
       font-size: .62rem;
@@ -592,6 +599,23 @@
     }
     .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--berry); }
     .modal-time  { font-size: .8rem; color: #b07090; }
+    .modal-task  { font-size: .85rem; font-weight: 600; color: var(--berry); }
+
+    .todo-minutes-row { display: flex; flex-direction: column; gap: 4px; }
+    .todo-minutes-row label {
+      font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: #b07090;
+    }
+    .todo-minutes-input {
+      border: 1.5px solid #f0c0cf;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      color: var(--berry);
+      outline: none;
+      transition: border-color .18s;
+    }
+    .todo-minutes-input:focus { border-color: var(--accent); }
 
     .modal-note {
       border: 1.5px solid #f0c0cf;
@@ -863,6 +887,10 @@
 
     <div class="todo-sections">
       <div class="todo-section">
+        <div class="todo-section-label">In Progress</div>
+        <div id="todoListInProgress"></div>
+      </div>
+      <div class="todo-section">
         <div class="todo-section-label">Today</div>
         <div id="todoListToday"></div>
       </div>
@@ -931,6 +959,21 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="todoCompleteModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-title">Complete task</div>
+    <div class="modal-task" id="todoCompleteTaskText"></div>
+    <div class="todo-minutes-row">
+      <label for="todoCompleteMinutes">Minutes it took</label>
+      <input type="number" id="todoCompleteMinutes" class="todo-minutes-input" min="0" step="1" placeholder="e.g. 25"/>
+    </div>
+    <div class="modal-row">
+      <button type="button" id="todoCompleteCancelBtn" class="btn-text">Cancel</button>
+      <button type="button" id="todoCompleteSaveBtn" class="btn btn-main">Mark Complete</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
   let totalSeconds = 25 * 60;
@@ -940,6 +983,7 @@
   let sessions     = 0;
   let isBreak      = false;
   let focusSessionStart = null;
+  let currentTodoId = null;
 
   function stopTickInterval() {
     if (interval !== null) { clearInterval(interval); interval = null; }
@@ -1095,20 +1139,38 @@
   function getTodos() { return JSON.parse(localStorage.getItem(TODO_KEY) || '[]'); }
   function saveTodos(arr) { localStorage.setItem(TODO_KEY, JSON.stringify(arr)); }
 
+  function todoStatus(t) { return t.status || (t.done ? 'done' : 'pending'); }
+
   function todoItemHtml(t) {
+    const status = todoStatus(t);
     const badge = t.remindDate ? '<span class="todo-badge">' + escapeHtml(formatTodoDate(t.remindDate)) + '</span>' : '';
-    if (t.done) {
+
+    if (status === 'done') {
+      const durBadge = (t.actualMinutes != null && t.actualMinutes !== '')
+        ? '<span class="todo-badge">' + escapeHtml(String(t.actualMinutes)) + ' min</span>' : '';
       return '<div class="todo-item todo-item-done" data-id="' + escapeHtml(t.id) + '">'
-        + '<label class="todo-row-label"><input type="checkbox" class="todo-cb" checked/>'
-        + '<span class="todo-text todo-text-done">' + escapeHtml(t.text) + '</span></label>'
+        + '<span class="todo-check" aria-hidden="true">✓</span>'
+        + '<span class="todo-text todo-text-done">' + escapeHtml(t.text) + '</span>'
+        + durBadge
         + '<button type="button" class="btn-text todo-act todo-del" data-act="del" data-id="' + escapeHtml(t.id) + '">Remove</button>'
         + '</div>';
     }
+
+    if (status === 'inProgress') {
+      return '<div class="todo-item todo-item-progress" data-id="' + escapeHtml(t.id) + '">'
+        + '<span class="todo-progress-dot" aria-hidden="true"></span>'
+        + '<span class="todo-text">' + escapeHtml(t.text) + '</span>'
+        + '<div class="todo-actions">'
+        + '<button type="button" class="btn-text todo-act" data-act="complete" data-id="' + escapeHtml(t.id) + '">Complete</button>'
+        + '<button type="button" class="btn-text todo-act" data-act="unstart" data-id="' + escapeHtml(t.id) + '">Back</button>'
+        + '</div></div>';
+    }
+
     return '<div class="todo-item" data-id="' + escapeHtml(t.id) + '">'
-      + '<label class="todo-row-label"><input type="checkbox" class="todo-cb"/>'
-      + '<span class="todo-text">' + escapeHtml(t.text) + '</span></label>'
+      + '<span class="todo-text">' + escapeHtml(t.text) + '</span>'
       + badge
       + '<div class="todo-actions">'
+      + '<button type="button" class="btn-text todo-act" data-act="start"    data-id="' + escapeHtml(t.id) + '">Start</button>'
       + '<button type="button" class="btn-text todo-act" data-act="tomorrow" data-id="' + escapeHtml(t.id) + '">Tomorrow</button>'
       + '<button type="button" class="btn-text todo-act" data-act="today"    data-id="' + escapeHtml(t.id) + '">Today</button>'
       + '<button type="button" class="btn-text todo-act todo-del" data-act="del" data-id="' + escapeHtml(t.id) + '">Remove</button>'
@@ -1117,20 +1179,56 @@
 
   function renderTodos() {
     const tk = todayKey(), tm = tomorrowDateKey(), todos = getTodos();
-    const active   = todos.filter(t => !t.done);
-    const doneList = todos.filter(t =>  t.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
-    const todayList    = active.filter(t => !t.remindDate || t.remindDate <= tk);
-    const tomorrowList = active.filter(t => t.remindDate === tm);
-    const laterList    = active.filter(t => t.remindDate && t.remindDate > tm);
+    const inProgress = todos.filter(t => todoStatus(t) === 'inProgress');
+    const pending     = todos.filter(t => todoStatus(t) === 'pending');
+    const doneList    = todos.filter(t => todoStatus(t) === 'done').sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
+    const todayList    = pending.filter(t => !t.remindDate || t.remindDate <= tk);
+    const tomorrowList = pending.filter(t => t.remindDate === tm);
+    const laterList    = pending.filter(t => t.remindDate && t.remindDate > tm);
 
     function fill(id, list, emptyMsg) {
       const el = document.getElementById(id); if (!el) return;
       el.innerHTML = list.length ? list.map(todoItemHtml).join('') : '<p class="todo-empty">' + emptyMsg + '</p>';
     }
-    fill('todoListToday',    todayList,    'Nothing for today — add a task above.');
-    fill('todoListTomorrow', tomorrowList, 'No tasks scheduled for tomorrow.');
-    fill('todoListLater',    laterList,    'No tasks scheduled further out.');
-    fill('todoListDone',     doneList,     'No completed tasks yet.');
+    fill('todoListInProgress', inProgress,   'Nothing in progress — hit Start on a task below.');
+    fill('todoListToday',      todayList,    'Nothing for today — add a task above.');
+    fill('todoListTomorrow',   tomorrowList, 'No tasks scheduled for tomorrow.');
+    fill('todoListLater',      laterList,    'No tasks scheduled further out.');
+    fill('todoListDone',       doneList,     'No completed tasks yet.');
+  }
+
+  function openTodoCompleteModal(todoId) {
+    const modal    = document.getElementById('todoCompleteModal');
+    const textEl   = document.getElementById('todoCompleteTaskText');
+    const minInput = document.getElementById('todoCompleteMinutes');
+    const saveBtn  = document.getElementById('todoCompleteSaveBtn');
+    const cancelBtn = document.getElementById('todoCompleteCancelBtn');
+    if (!modal || !textEl || !minInput || !saveBtn || !cancelBtn) return;
+    const todos = getTodos(), t = todos.find(x => x.id === todoId);
+    if (!t) return;
+    textEl.textContent = t.text;
+    minInput.value = (t.actualMinutes != null) ? t.actualMinutes : '';
+    modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); minInput.focus();
+    const done = () => {
+      saveBtn.onclick = null; cancelBtn.onclick = null; minInput.onkeydown = null;
+      modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true');
+    };
+    saveBtn.onclick = () => {
+      const freshTodos = getTodos(), item = freshTodos.find(x => x.id === todoId);
+      if (item) {
+        const mins = parseFloat(minInput.value);
+        item.status = 'done'; item.done = true; item.doneAt = new Date().toISOString();
+        item.actualMinutes = isNaN(mins) ? null : mins;
+        saveTodos(freshTodos); renderTodos();
+        if (currentTodoId === todoId) currentTodoId = null;
+      }
+      done();
+    };
+    cancelBtn.onclick = () => done();
+    minInput.onkeydown = e => {
+      if (e.key === 'Escape') { e.preventDefault(); done(); }
+      if (e.key === 'Enter')  { e.preventDefault(); saveBtn.click(); }
+    };
   }
 
   function initTodoPanel() {
@@ -1148,7 +1246,7 @@
       let id;
       try { id = crypto.randomUUID(); } catch (e) { id = String(Date.now()) + '-' + Math.random().toString(16).slice(2); }
       const todos = getTodos();
-      todos.push({ id, text, done: false, createdIso: new Date().toISOString(), remindDate: rd });
+      todos.push({ id, text, status: 'pending', done: false, actualMinutes: null, createdIso: new Date().toISOString(), remindDate: rd });
       saveTodos(todos);
       if (input) input.value = '';
       if (cbTom) cbTom.checked = false;
@@ -1158,24 +1256,31 @@
 
     if (addBtn) addBtn.addEventListener('click', doAdd);
     if (input)  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
-    if (clearDone) clearDone.addEventListener('click', () => { saveTodos(getTodos().filter(t => !t.done)); renderTodos(); });
-
-    panel.addEventListener('change', e => {
-      const c = e.target; if (!c.classList.contains('todo-cb')) return;
-      const row = c.closest('.todo-item'), id = row && row.getAttribute('data-id'); if (!id) return;
-      const todos = getTodos(), t = todos.find(x => x.id === id); if (!t) return;
-      t.done = c.checked; t.doneAt = c.checked ? new Date().toISOString() : null;
-      saveTodos(todos); renderTodos();
-    });
+    if (clearDone) clearDone.addEventListener('click', () => { saveTodos(getTodos().filter(t => todoStatus(t) !== 'done')); renderTodos(); });
 
     panel.addEventListener('click', e => {
       const b = e.target.closest('.todo-act'); if (!b) return;
       const id = b.getAttribute('data-id'), act = b.getAttribute('data-act'); if (!id || !act) return;
       const todos = getTodos(), t = todos.find(x => x.id === id);
-      if (act === 'del') { saveTodos(todos.filter(x => x.id !== id)); }
-      else if (t && act === 'tomorrow') { t.remindDate = tomorrowDateKey(); saveTodos(todos); }
-      else if (t && act === 'today')    { t.remindDate = null; saveTodos(todos); }
-      renderTodos();
+      if (act === 'del') { saveTodos(todos.filter(x => x.id !== id)); renderTodos(); return; }
+      if (!t) return;
+      if (act === 'tomorrow') { t.remindDate = tomorrowDateKey(); saveTodos(todos); renderTodos(); }
+      else if (act === 'today') { t.remindDate = null; saveTodos(todos); renderTodos(); }
+      else if (act === 'start') {
+        t.status = 'inProgress'; t.startedIso = new Date().toISOString();
+        saveTodos(todos); renderTodos();
+        currentTodoId = t.id;
+        const taskInput = document.getElementById('taskNameInput');
+        if (taskInput) taskInput.value = t.text;
+      }
+      else if (act === 'unstart') {
+        t.status = 'pending'; t.startedIso = null;
+        if (currentTodoId === t.id) currentTodoId = null;
+        saveTodos(todos); renderTodos();
+      }
+      else if (act === 'complete') {
+        openTodoCompleteModal(t.id);
+      }
     });
 
     if (dateIn && cbTom) {
