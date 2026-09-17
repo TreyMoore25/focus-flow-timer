@@ -13,6 +13,8 @@
       --berry: #1a2836;
       --accent: #e8445a;
       --accent2: #f472b6;
+      --text-label: #834966;
+      --text-label-soft: #7b5166;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -92,7 +94,7 @@
       font-weight: 500;
       letter-spacing: 2.5px;
       text-transform: uppercase;
-      color: #b07090;
+      color: var(--text-label);
     }
 
     /* ══════════════════════════════════════
@@ -148,7 +150,7 @@
       transition: background .3s;
     }
     .session-dot.done { background: var(--accent); box-shadow: 0 0 8px rgba(228,68,90,.5); }
-    .session-label { font-size: .66rem; color: #b07090; letter-spacing: 2px; text-transform: uppercase; margin-right: 4px; }
+    .session-label { font-size: .66rem; color: var(--text-label); letter-spacing: 2px; text-transform: uppercase; margin-right: 4px; }
 
     .complete-msg {
       display: none;
@@ -202,7 +204,7 @@
     }
     .timer-label {
       font-size: .65rem;
-      color: #b07090;
+      color: var(--text-label);
       letter-spacing: 3px;
       text-transform: uppercase;
       text-align: center;
@@ -249,7 +251,7 @@
 
     /* Duration picker */
     .dur-section { display: flex; flex-direction: column; align-items: center; gap: 7px; width: 100%; }
-    .dur-label-row { font-size: .65rem; color: #b07090; letter-spacing: 2px; text-transform: uppercase; }
+    .dur-label-row { font-size: .65rem; color: var(--text-label); letter-spacing: 2px; text-transform: uppercase; }
     .dur-tabs { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
 
     .dur-btn {
@@ -285,7 +287,7 @@
       gap: 7px;
       width: 100%;
     }
-    .custom-title { font-size: .65rem; color: #b07090; letter-spacing: 2px; text-transform: uppercase; }
+    .custom-title { font-size: .65rem; color: var(--text-label); letter-spacing: 2px; text-transform: uppercase; }
     .custom-row { display: flex; align-items: center; gap: 6px; }
 
     .time-field { display: flex; flex-direction: column; align-items: center; gap: 2px; }
@@ -377,7 +379,7 @@
       align-items: center;
       gap: 10px;
       font-size: .75rem;
-      color: #b07090;
+      color: var(--text-label);
     }
     .todo-date-opt { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
     .todo-date-input {
@@ -407,7 +409,7 @@
       font-size: .62rem;
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: #c0a0b0;
+      color: var(--text-label-soft);
       margin-bottom: 5px;
       display: flex;
       align-items: center;
@@ -451,7 +453,7 @@
     .todo-badge {
       font-size: .62rem;
       background: #f0e0e8;
-      color: #b07090;
+      color: var(--text-label);
       padding: 2px 7px;
       border-radius: 20px;
       white-space: nowrap;
@@ -464,7 +466,7 @@
       border: none;
       font-family: 'DM Sans', sans-serif;
       font-size: .7rem;
-      color: #b07090;
+      color: var(--text-label);
       cursor: pointer;
       padding: 2px 5px;
       border-radius: 4px;
@@ -503,7 +505,7 @@
     .day-log-empty { font-size: .8rem; color: #c0b0b8; font-style: italic; }
 
     .hour-block { margin-bottom: 12px; }
-    .hour-label { font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: #c0a0b0; margin-bottom: 6px; }
+    .hour-label { font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-label-soft); margin-bottom: 6px; }
 
     .log-entry {
       background: rgba(255,248,250,.85);
@@ -517,7 +519,7 @@
       align-items: start;
     }
     .log-entry-time { font-size: .75rem; color: var(--pink); font-weight: 500; }
-    .log-entry-dur  { font-size: .72rem; color: #b07090; }
+    .log-entry-dur  { font-size: .72rem; color: var(--text-label); }
     .log-entry-del  {
       grid-row: 1;
       grid-column: 3;
@@ -545,7 +547,7 @@
       max-width: 340px;
     }
     .integration-section { display: flex; flex-direction: column; gap: 5px; }
-    .int-label { font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: #c0a0b0; }
+    .int-label { font-size: .62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-label-soft); }
     .int-row { display: flex; gap: 6px; }
 
     .int-input {
@@ -591,7 +593,7 @@
       gap: 14px;
     }
     .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--berry); }
-    .modal-time  { font-size: .8rem; color: #b07090; }
+    .modal-time  { font-size: .8rem; color: var(--text-label); }
 
     .modal-note {
       border: 1.5px solid #f0c0cf;
@@ -611,14 +613,14 @@
     .modal-row { display: flex; align-items: center; justify-content: space-between; }
 
     /* Responsive */
-    @media (max-width: 640px) {
+    @media (max-width: 900px) {
       .dashboard { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-<canvas id="starfield"></canvas>
+<canvas id="starfield" aria-hidden="true"></canvas>
 
 <header class="page-header">
   <div class="title">Trey's Focus <span>Flow</span></div>
@@ -628,7 +630,7 @@
 
   <!-- ── Tile 1: Visualization ── -->
   <div class="tile tile-visual">
-    <div class="cup-scene" id="cupScene">
+    <div class="cup-scene" id="cupScene" tabindex="0" role="button" aria-label="Sip">
       <svg class="cup-svg" viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <clipPath id="cupClip">
@@ -769,12 +771,12 @@
       </svg>
     </div>
 
-    <div class="sessions">
-      <span class="session-label">Sips</span>
-      <div class="session-dot" id="dot0"></div>
-      <div class="session-dot" id="dot1"></div>
-      <div class="session-dot" id="dot2"></div>
-      <div class="session-dot" id="dot3"></div>
+    <div class="sessions" id="sessionsProgress" aria-label="0 of 4 sessions completed">
+      <span class="session-label" aria-hidden="true">Sips</span>
+      <div class="session-dot" id="dot0" aria-hidden="true"></div>
+      <div class="session-dot" id="dot1" aria-hidden="true"></div>
+      <div class="session-dot" id="dot2" aria-hidden="true"></div>
+      <div class="session-dot" id="dot3" aria-hidden="true"></div>
     </div>
 
     <div class="complete-msg" id="completeMsg">🍓 Session complete! Breathe &amp; sip.</div>
@@ -804,9 +806,9 @@
     </div>
 
     <div class="controls">
-      <button class="btn btn-icon" id="resetBtn" title="Reset">↺</button>
+      <button class="btn btn-icon" id="resetBtn" title="Reset" aria-label="Reset">↺</button>
       <button type="button" class="btn btn-main" id="startBtn">Start Sipping</button>
-      <button class="btn btn-icon" id="skipBtn"  title="Skip Break">⏭</button>
+      <button class="btn btn-icon" id="skipBtn"  title="Skip Break" aria-label="Skip Break">⏭</button>
     </div>
 
     <div class="dur-section">
@@ -1267,16 +1269,27 @@
     note.value = '';
     const fmt = iso => new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     span.textContent = fmt(startIso) + ' \u2013 ' + fmt(endIso) + ' \u00B7 ' + Math.round(durationSec / 60) + ' min focus';
+    const previouslyFocused = document.activeElement;
+    const focusable = [note, saveBtn, skipBtnM];
     modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); note.focus();
     const done = () => {
-      saveBtn.onclick = null; skipBtnM.onclick = null; note.onkeydown = null;
+      saveBtn.onclick = null; skipBtnM.onclick = null; note.onkeydown = null; modal.onkeydown = null;
       modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); onDone();
+      if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
     };
     saveBtn.onclick = () => { addLogEntry({ startIso, endIso, durationSec, note: note.value.trim() }); renderDayLog(); done(); };
     skipBtnM.onclick = () => done();
     note.onkeydown = e => {
-      if (e.key === 'Escape') { e.preventDefault(); done(); }
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveBtn.click(); }
+    };
+    modal.onkeydown = e => {
+      if (e.key === 'Escape') { e.preventDefault(); done(); return; }
+      if (e.key !== 'Tab') return;
+      const i = focusable.indexOf(document.activeElement);
+      const next = e.shiftKey
+        ? focusable[(i <= 0 ? focusable.length : i) - 1]
+        : focusable[(i + 1) % focusable.length];
+      e.preventDefault(); next.focus();
     };
   }
 
@@ -1322,6 +1335,7 @@
 
   function updateDots() {
     for (let i = 0; i < 4; i++) document.getElementById('dot'+i).classList.toggle('done', i < sessions);
+    document.getElementById('sessionsProgress').setAttribute('aria-label', Math.min(sessions, 4) + ' of 4 sessions completed');
   }
 
   // ── Custom duration helpers ────────────────────────────────────────────────
@@ -1434,13 +1448,22 @@
   });
 
   // Cup sip ripple
-  cupScene.addEventListener('click', e => {
-    const rect = cupScene.getBoundingClientRect();
+  function showSipRipple(x, y) {
     const rip = document.createElement('div');
     rip.className = 'sip-ripple';
-    rip.style.left = (e.clientX - rect.left - 18) + 'px';
-    rip.style.top  = (e.clientY - rect.top  - 18) + 'px';
+    rip.style.left = (x - 18) + 'px';
+    rip.style.top  = (y - 18) + 'px';
     cupScene.appendChild(rip); setTimeout(() => rip.remove(), 700);
+  }
+  cupScene.addEventListener('click', e => {
+    const rect = cupScene.getBoundingClientRect();
+    showSipRipple(e.clientX - rect.left, e.clientY - rect.top);
+  });
+  cupScene.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    const rect = cupScene.getBoundingClientRect();
+    showSipRipple(rect.width / 2, rect.height / 2);
   });
 
   // ── Integration save buttons ───────────────────────────────────────────────
