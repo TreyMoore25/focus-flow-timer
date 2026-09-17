@@ -1,6 +1,7 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,12 +10,24 @@ const ALLOWED_EMAIL = 'treym1508@gmail.com';
 const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'fallback-secret-change-in-railway';
 
+function safeCompare(a, b) {
+  const bufA = Buffer.from(String(a ?? ''));
+  const bufB = Buffer.from(String(b ?? ''));
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+app.set('trust proxy', 1);
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 }
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  }
 }));
 
 function requireAuth(req, res, next) {
@@ -132,7 +145,7 @@ app.post('/login', (req, res) => {
   const email = (req.body.email || '').toLowerCase().trim();
   const password = req.body.password || '';
 
-  if (email === ALLOWED_EMAIL && password === LOGIN_PASSWORD) {
+  if (email === ALLOWED_EMAIL && safeCompare(password, LOGIN_PASSWORD)) {
     req.session.authenticated = true;
     return res.redirect('/');
   }

@@ -7,10 +7,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --pink: #3d6fa3;
-      --red: #1e3a52;
-      --blush: #e4ebf4;
-      --berry: #1a2836;
+      --slate-blue: #3d6fa3;
+      --navy: #1e3a52;
+      --mist: #e4ebf4;
+      --ink: #1a2836;
       --accent: #e8445a;
       --accent2: #f472b6;
       --text-label: #834966;
@@ -156,7 +156,7 @@
       display: none;
       font-family: 'Playfair Display', serif;
       font-size: .95rem;
-      color: var(--berry);
+      color: var(--ink);
       text-align: center;
       animation: fadeIn .6s ease;
     }
@@ -193,11 +193,16 @@
       transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);
     }
 
+    .timer-readout {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
     .timer-display {
       font-family: 'Playfair Display', serif;
       font-size: 2.6rem;
       font-weight: 900;
-      color: var(--berry);
+      color: var(--ink);
       letter-spacing: -2px;
       line-height: 1;
       text-align: center;
@@ -223,7 +228,7 @@
       transition: all .2s ease;
       outline: none;
     }
-    .btn:focus-visible { outline: 2px solid var(--berry); outline-offset: 3px; }
+    .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
     .btn:active { transform: scale(.95); }
 
     .btn-main {
@@ -238,7 +243,7 @@
 
     .btn-icon {
       background: white;
-      color: var(--berry);
+      color: var(--ink);
       font-size: 1rem;
       width: 44px; height: 44px;
       border-radius: 50%;
@@ -247,7 +252,7 @@
       justify-content: center;
       box-shadow: 0 4px 14px rgba(30,52,74,.14);
     }
-    .btn-icon:hover { background: var(--blush); }
+    .btn-icon:hover { background: var(--mist); }
 
     /* Duration picker */
     .dur-section { display: flex; flex-direction: column; align-items: center; gap: 7px; width: 100%; }
@@ -257,7 +262,7 @@
     .dur-btn {
       background: white;
       border: 1.5px solid #f0c0cf;
-      color: var(--berry);
+      color: var(--ink);
       font-family: 'DM Sans', sans-serif;
       font-size: .74rem;
       font-weight: 500;
@@ -267,7 +272,7 @@
       transition: all .18s;
       letter-spacing: .3px;
     }
-    .dur-btn:focus-visible { outline: 2px solid var(--berry); outline-offset: 2px; }
+    .dur-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     .dur-btn:hover,
     .dur-btn.active {
       background: var(--accent);
@@ -298,7 +303,7 @@
       text-align: center;
       background: white;
       border: 1.5px solid #f0c0cf;
-      color: var(--berry);
+      color: var(--ink);
       font-family: 'DM Sans', sans-serif;
       font-size: .88rem;
       font-weight: 500;
@@ -314,7 +319,7 @@
     .time-sep { color: #d090a0; font-weight: 700; font-size: 1rem; margin-top: 12px; }
 
     .set-btn {
-      background: linear-gradient(135deg, var(--red), #c0394a);
+      background: linear-gradient(135deg, var(--navy), #c0394a);
       color: white;
       font-family: 'DM Sans', sans-serif;
       font-size: .76rem;
@@ -328,7 +333,7 @@
       box-shadow: 0 4px 12px rgba(155,31,74,.22);
       white-space: nowrap;
     }
-    .set-btn:focus-visible { outline: 2px solid var(--berry); outline-offset: 2px; }
+    .set-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     .set-btn:hover { box-shadow: 0 6px 18px rgba(232,68,90,.35); transform: translateY(-1px); }
 
     /* ══════════════════════════════════════
@@ -349,7 +354,7 @@
       padding: 8px 12px;
       font-family: 'DM Sans', sans-serif;
       font-size: .85rem;
-      color: var(--berry);
+      color: var(--ink);
       outline: none;
       background: white;
       transition: border-color .18s;
@@ -388,7 +393,7 @@
       padding: 4px 8px;
       font-family: 'DM Sans', sans-serif;
       font-size: .75rem;
-      color: var(--berry);
+      color: var(--ink);
       outline: none;
       background: white;
       flex: 1;
@@ -443,7 +448,7 @@
 
     .todo-text {
       font-size: .82rem;
-      color: var(--berry);
+      color: var(--ink);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -518,7 +523,7 @@
       gap: 2px 8px;
       align-items: start;
     }
-    .log-entry-time { font-size: .75rem; color: var(--pink); font-weight: 500; }
+    .log-entry-time { font-size: .75rem; color: var(--slate-blue); font-weight: 500; }
     .log-entry-dur  { font-size: .72rem; color: var(--text-label); }
     .log-entry-del  {
       grid-row: 1;
@@ -557,7 +562,7 @@
       padding: 6px 10px;
       font-family: 'DM Sans', sans-serif;
       font-size: .75rem;
-      color: var(--berry);
+      color: var(--ink);
       outline: none;
       background: white;
       transition: border-color .18s;
@@ -592,7 +597,7 @@
       flex-direction: column;
       gap: 14px;
     }
-    .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--berry); }
+    .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--ink); }
     .modal-time  { font-size: .8rem; color: var(--text-label); }
 
     .modal-note {
@@ -601,7 +606,7 @@
       padding: 10px 14px;
       font-family: 'DM Sans', sans-serif;
       font-size: .88rem;
-      color: var(--berry);
+      color: var(--ink);
       outline: none;
       resize: vertical;
       min-height: 80px;
@@ -799,7 +804,7 @@
         <circle class="progress-track" cx="93" cy="93" r="85"/>
         <circle id="progress-arc" cx="93" cy="93" r="85" stroke-dasharray="534.07" stroke-dashoffset="0"/>
       </svg>
-      <div style="position:relative;z-index:1;text-align:center;">
+      <div class="timer-readout">
         <div class="timer-display" id="timerDisplay">25:00</div>
         <div class="timer-label"  id="modeLabel">focus session</div>
       </div>
@@ -1316,9 +1321,8 @@
   function applyFocusDurationFromInputs() {
     if (running) return false;
     const total = readDurationSeconds(); if (total <= 0) return false;
-    totalSeconds = total; remaining = total; isBreak = false; focusSessionStart = null;
-    modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
-    startBtn.textContent = 'Start Sipping'; completeMsg.classList.remove('show');
+    totalSeconds = total; remaining = total;
+    setFocusModeState(); resetFocusModeUI();
     updateDisplay(); return true;
   }
 
@@ -1338,14 +1342,24 @@
           showFocusLogPrompt(sessStart, sessEnd, actualSec, () => { beginBreakAfterFocus(); });
         }, 1600);
       } else {
-        isBreak = false;
         const t = readDurationSeconds(); totalSeconds = t > 0 ? t : 25 * 60; remaining = totalSeconds;
-        modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
-        setTimeout(() => { updateDisplay(); completeMsg.classList.remove('show'); startBtn.textContent = 'Start Sipping'; }, 2200);
+        setFocusModeState();
+        setTimeout(() => { updateDisplay(); resetFocusModeUI(); }, 2200);
       }
       return;
     }
     remaining--; updateDisplay();
+  }
+
+  // Shared "back to focus mode" transition, split so callers can delay the
+  // UI-reset half (button text / complete message) independently of the
+  // state/label half — see tick()'s break-end branch.
+  function setFocusModeState() {
+    isBreak = false; focusSessionStart = null;
+    modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
+  }
+  function resetFocusModeUI() {
+    startBtn.textContent = 'Start Sipping'; completeMsg.classList.remove('show');
   }
 
   // ── Button events ──────────────────────────────────────────────────────────
@@ -1375,18 +1389,16 @@
   });
 
   resetBtn.addEventListener('click', () => {
-    stopTickInterval(); running = false; isBreak = false; focusSessionStart = null;
+    stopTickInterval(); running = false;
     const t = readDurationSeconds(); totalSeconds = t > 0 ? t : 25 * 60; remaining = totalSeconds;
-    modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
-    startBtn.textContent = 'Start Sipping'; completeMsg.classList.remove('show'); updateDisplay();
+    setFocusModeState(); resetFocusModeUI(); updateDisplay();
   });
 
   skipBtn.addEventListener('click', () => {
     if (!isBreak) return;
-    stopTickInterval(); running = false; isBreak = false; focusSessionStart = null;
+    stopTickInterval(); running = false;
     const t = readDurationSeconds(); totalSeconds = t > 0 ? t : 25 * 60; remaining = totalSeconds;
-    modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
-    startBtn.textContent = 'Start Sipping'; completeMsg.classList.remove('show'); updateDisplay();
+    setFocusModeState(); resetFocusModeUI(); updateDisplay();
   });
 
   setCustomBtn.addEventListener('click', () => {
@@ -1407,9 +1419,8 @@
       document.getElementById('customHr').value  = 0;
       document.getElementById('customMin').value = mins;
       document.getElementById('customSec').value = 0;
-      totalSeconds = mins * 60; remaining = totalSeconds; isBreak = false; focusSessionStart = null;
-      modeLabel.textContent = 'focus session'; display.style.color = '#9b1f4a';
-      startBtn.textContent = 'Start Sipping'; completeMsg.classList.remove('show');
+      totalSeconds = mins * 60; remaining = totalSeconds;
+      setFocusModeState(); resetFocusModeUI();
       updateDisplay();
     });
   });
