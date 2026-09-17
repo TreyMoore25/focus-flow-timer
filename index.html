@@ -661,9 +661,9 @@
             <stop offset="100%" stop-color="rgba(255,228,234,.82)"/>
           </linearGradient>
           <linearGradient id="iceG" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%"   stop-color="rgba(255,255,255,.95)"/>
-            <stop offset="55%"  stop-color="rgba(215,238,255,.78)"/>
-            <stop offset="100%" stop-color="rgba(170,215,240,.55)"/>
+            <stop offset="0%"   stop-color="rgba(255,255,255,.5)"/>
+            <stop offset="45%"  stop-color="rgba(220,242,255,.3)"/>
+            <stop offset="100%" stop-color="rgba(170,215,240,.2)"/>
           </linearGradient>
           <filter id="iceBlur"><feGaussianBlur stdDeviation="0.7"/></filter>
           <filter id="surfaceGlow" x="-5%" y="-40%" width="110%" height="180%">
@@ -693,30 +693,30 @@
 
           <!-- Ice cubes -->
           <g id="ice-group">
-            <g id="ice1" transform="rotate(-5,85,272)" opacity=".72">
-              <rect x="64" y="260" width="42" height="30" rx="6" fill="url(#iceG)"/>
-              <rect x="67" y="263" width="12" height="2.5" rx="1.5" fill="rgba(255,255,255,.7)"/>
-              <line x1="64" y1="275" x2="106" y2="275" stroke="rgba(160,210,235,.4)" stroke-width="1"/>
+            <g id="ice1" transform="rotate(-5,85,272)" opacity=".7">
+              <rect x="64" y="260" width="42" height="30" rx="3" fill="url(#iceG)" stroke="rgba(255,255,255,.35)" stroke-width=".6"/>
+              <rect x="67" y="263" width="12" height="2.5" rx="1.5" fill="rgba(255,255,255,.55)"/>
+              <line x1="72" y1="264" x2="98"  y2="283" stroke="rgba(255,255,255,.25)" stroke-width=".5"/>
             </g>
-            <g id="ice2" transform="rotate(8,135,270)" opacity=".68">
-              <rect x="114" y="258" width="40" height="30" rx="6" fill="url(#iceG)" filter="url(#iceBlur)"/>
-              <rect x="117" y="261" width="10" height="2.5" rx="1.5" fill="rgba(255,255,255,.65)"/>
-              <line x1="114" y1="273" x2="154" y2="273" stroke="rgba(160,210,235,.35)" stroke-width="1"/>
+            <g id="ice2" transform="rotate(8,135,270)" opacity=".65">
+              <rect x="114" y="258" width="40" height="30" rx="3" fill="url(#iceG)" stroke="rgba(255,255,255,.3)" stroke-width=".6" filter="url(#iceBlur)"/>
+              <rect x="117" y="261" width="10" height="2.5" rx="1.5" fill="rgba(255,255,255,.5)"/>
+              <line x1="121" y1="261" x2="146" y2="281" stroke="rgba(255,255,255,.22)" stroke-width=".5"/>
             </g>
-            <g id="ice3" transform="rotate(-9,72,295)" opacity=".88">
-              <rect x="50" y="285" width="44" height="32" rx="6" fill="url(#iceG)" filter="url(#iceBlur)"/>
-              <rect x="53" y="288" width="14" height="3"   rx="2"   fill="rgba(255,255,255,.75)"/>
-              <line x1="50" y1="301" x2="94"  y2="301" stroke="rgba(160,210,235,.45)" stroke-width="1.2"/>
-              <path d="M50,295 L94,295" stroke="rgba(180,220,240,.25)" stroke-width=".6" fill="none"/>
+            <g id="ice3" transform="rotate(-9,72,295)" opacity=".8">
+              <rect x="50" y="285" width="44" height="32" rx="3" fill="url(#iceG)" stroke="rgba(255,255,255,.35)" stroke-width=".6" filter="url(#iceBlur)"/>
+              <rect x="53" y="288" width="14" height="3"   rx="2"   fill="rgba(255,255,255,.6)"/>
+              <line x1="57" y1="289" x2="86"  y2="309" stroke="rgba(255,255,255,.25)" stroke-width=".5"/>
             </g>
-            <g id="ice4" transform="rotate(5,140,292)" opacity=".85">
-              <rect x="119" y="280" width="42" height="30" rx="6" fill="url(#iceG)"/>
-              <rect x="122" y="283" width="12" height="3"   rx="2"   fill="rgba(255,255,255,.7)"/>
-              <line x1="119" y1="296" x2="161" y2="296" stroke="rgba(160,210,235,.4)" stroke-width="1"/>
+            <g id="ice4" transform="rotate(5,140,292)" opacity=".78">
+              <rect x="119" y="280" width="42" height="30" rx="3" fill="url(#iceG)" stroke="rgba(255,255,255,.3)" stroke-width=".6"/>
+              <rect x="122" y="283" width="12" height="3"   rx="2"   fill="rgba(255,255,255,.55)"/>
+              <line x1="126" y1="283" x2="152" y2="303" stroke="rgba(255,255,255,.22)" stroke-width=".5"/>
             </g>
-            <g id="ice5" transform="rotate(-3,95,315)" opacity=".6">
-              <rect x="75" y="308" width="38" height="22" rx="5" fill="url(#iceG)"/>
-              <rect x="78" y="311" width="9"  height="2"  rx="1.5" fill="rgba(255,255,255,.6)"/>
+            <g id="ice5" transform="rotate(-3,95,315)" opacity=".55">
+              <rect x="75" y="308" width="38" height="22" rx="3" fill="url(#iceG)" stroke="rgba(255,255,255,.3)" stroke-width=".6"/>
+              <rect x="78" y="311" width="9"  height="2"  rx="1.5" fill="rgba(255,255,255,.5)"/>
+              <line x1="81" y1="311" x2="103" y2="325" stroke="rgba(255,255,255,.2)" stroke-width=".5"/>
             </g>
           </g>
 
@@ -1325,9 +1325,10 @@
     });
     ICE_BASE.forEach((cube, i) => {
       const el = iceEls[i]; if (!el) return;
-      const bobY = Math.sin(t * cube.freq + cube.phase) * 1.4;
-      const rotDrift = Math.sin(t * cube.freq * 0.7 + cube.phase) * 1.6;
-      el.setAttribute('transform', `rotate(${cube.angle + rotDrift},${cube.cx},${cube.cy}) translate(0,${bobY})`);
+      const bobY = Math.sin(t * cube.freq + cube.phase) * 3.5;
+      const bobX = Math.cos(t * cube.freq * 0.6 + cube.phase) * 1.8;
+      const rotDrift = Math.sin(t * cube.freq * 0.7 + cube.phase) * 3;
+      el.setAttribute('transform', `rotate(${cube.angle + rotDrift},${cube.cx},${cube.cy}) translate(${bobX},${bobY})`);
     });
     requestAnimationFrame(animateWave);
   }
