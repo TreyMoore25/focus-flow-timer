@@ -2,6 +2,8 @@
 
 A single-file productivity dashboard built around the Pomodoro technique. No dependencies, no build step — open the HTML file in any browser and go.
 
+A small circular brand logo sits next to the page title, embedded as a base64 JPEG (no separate image file) to keep the app a single portable HTML file.
+
 ## Features
 
 **Timer**
