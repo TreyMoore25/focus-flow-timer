@@ -459,6 +459,7 @@
     }
     .todo-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
+    .log-header-actions { display: flex; align-items: center; gap: 4px; }
     .btn-text {
       background: none;
       border: none;
@@ -888,7 +889,10 @@
   <div class="tile tile-log">
     <div class="tile-header">
       <div class="tile-label">Today's Focus Log</div>
-      <button type="button" id="copyReportBtn" class="btn-text">Copy Report</button>
+      <div class="log-header-actions">
+        <button type="button" id="copyReportBtn" class="btn-text">Copy Report</button>
+        <button type="button" id="exportReportBtn" class="btn-text">Export .txt</button>
+      </div>
     </div>
 
     <div class="tile-log-body">
@@ -902,15 +906,6 @@
             <button type="button" id="slackSaveUrlBtn" class="set-btn">Save</button>
           </div>
           <div id="slackSyncStatus" class="sync-status"></div>
-        </div>
-
-        <div class="integration-section">
-          <div class="int-label">Google Sheets URL</div>
-          <div class="int-row">
-            <input type="url" id="sheetWebhookInput" class="int-input" placeholder="https://script.google.com/macros/..."/>
-            <button type="button" id="sheetSaveUrlBtn" class="set-btn">Save</button>
-          </div>
-          <div id="sheetSyncStatus" class="sync-status"></div>
         </div>
       </div>
     </div>
@@ -947,7 +942,6 @@
 
   // ── Storage keys ───────────────────────────────────────────────────────────
   const LOG_KEY          = 'focusFlowSessionLog_v1';
-  const SHEET_WEBHOOK_KEY = 'focusFlowSheetWebhookUrl';
   const SLACK_WEBHOOK_KEY = 'focusFlowSlackWebhookUrl';
   const TODO_KEY         = 'focusFlowTodos_v1';
 
@@ -1043,26 +1037,8 @@
     const all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
     all.push(entry);
     localStorage.setItem(LOG_KEY, JSON.stringify(all));
-    syncEntryToGoogleSheet(entry);
     syncEntryToSlack(entry);
     return entry;
-  }
-
-  // ── Google Sheets ──────────────────────────────────────────────────────────
-  function getSheetWebhookUrl() { return (localStorage.getItem(SHEET_WEBHOOK_KEY) || '').trim(); }
-  function setSheetStatus(msg, isErr) {
-    const el = document.getElementById('sheetSyncStatus');
-    if (!el) return;
-    el.textContent = msg; el.style.color = isErr ? '#b03a50' : '#2d6a3e';
-    if (el._timer) clearTimeout(el._timer);
-    el._timer = setTimeout(() => { el.textContent = ''; }, 8000);
-  }
-  function syncEntryToGoogleSheet(entry) {
-    const url = getSheetWebhookUrl(); if (!url) return;
-    fetch(url, { method: 'POST', body: JSON.stringify(entry), headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(() => setSheetStatus('Appended to Google Sheet.', false))
-      .catch(() => setSheetStatus('Google Sheet not updated — check URL or network.', true));
   }
 
   // ── Slack ──────────────────────────────────────────────────────────────────
@@ -1444,17 +1420,6 @@
   });
 
   // ── Integration save buttons ───────────────────────────────────────────────
-  const sheetInput   = document.getElementById('sheetWebhookInput');
-  const sheetSaveBtn = document.getElementById('sheetSaveUrlBtn');
-  if (sheetInput) sheetInput.value = getSheetWebhookUrl();
-  if (sheetSaveBtn && sheetInput) {
-    sheetSaveBtn.addEventListener('click', () => {
-      const v = sheetInput.value.trim();
-      localStorage.setItem(SHEET_WEBHOOK_KEY, v);
-      setSheetStatus(v ? 'Google Sheet URL saved.' : 'URL cleared.', false);
-    });
-  }
-
   const slackInput   = document.getElementById('slackWebhookInput');
   const slackSaveBtn = document.getElementById('slackSaveUrlBtn');
   if (slackInput) slackInput.value = getSlackWebhookUrl();
@@ -1474,6 +1439,19 @@
         navigator.clipboard.writeText(text).catch(() => window.prompt('Copy this report:', text));
       else
         window.prompt('Copy this report:', text);
+    });
+  }
+
+  const exportReportBtn = document.getElementById('exportReportBtn');
+  if (exportReportBtn) {
+    exportReportBtn.addEventListener('click', () => {
+      const blob = new Blob([buildDayReportText()], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'focus-flow-' + todayKey() + '.txt';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
     });
   }
 

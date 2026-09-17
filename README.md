@@ -23,11 +23,10 @@ A single-file productivity dashboard built around the Pomodoro technique. No dep
 - Each completed session prompts for an optional note
 - Log groups entries by hour, showing 12-hour timestamps (e.g. `2:15:42 PM – 2:40:09 PM`)
 - Delete individual entries
-- Copy the full day's log as a formatted text report
+- Copy the full day's log as a formatted text report, or export it as a `.txt` file
 
 **Integrations**
 - **Slack webhook** — automatically posts a summary when a focus session completes; per-entry 🔗 button to send individual blocks manually
-- **Google Sheets webhook** — posts session data to a connected Apps Script endpoint
 - **Alarm sound themes** — choose from Beeps, Chime, Bell, or Pulse; clicking previews the sound immediately
 
 **Browser notifications**
@@ -37,7 +36,7 @@ A single-file productivity dashboard built around the Pomodoro technique. No dep
 
 1. Download or clone the repo
 2. Open `Acai timer.html` in any modern browser
-3. (Optional) Paste a Slack incoming webhook URL and/or Google Sheets Apps Script URL into the integrations panel
+3. (Optional) Paste a Slack incoming webhook URL into the integrations panel
 
 No server, no npm install, no config files.
 
@@ -46,11 +45,6 @@ No server, no npm install, no config files.
 ### Slack
 1. Create an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your Slack workspace
 2. Paste the webhook URL into the **Slack Webhook** field in the integrations panel and click **Save**
-
-### Google Sheets
-1. Create a Google Sheet and open **Extensions → Apps Script**
-2. Deploy a web app that accepts POST requests and appends rows
-3. Paste the deployment URL into the **Google Sheets URL** field and click **Save**
 
 ## Open PRs
 
@@ -67,4 +61,4 @@ No server, no npm install, no config files.
 - Web Audio API for synthesized alarm sounds (no audio files)
 - Canvas API for the animated starfield
 - SVG for the progress ring and cup visualization
-- `localStorage` for all persistence (log, todos, webhook URLs, sound preference)
+- `localStorage` for all persistence (log, todos, webhook URL, sound preference)
