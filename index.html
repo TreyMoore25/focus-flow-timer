@@ -701,28 +701,28 @@
 
           <!-- Ice cubes -->
           <g id="ice-group">
-            <g transform="rotate(-5,85,272)" opacity=".72">
+            <g id="ice1" transform="rotate(-5,85,272)" opacity=".72">
               <rect x="64" y="260" width="42" height="30" rx="6" fill="url(#iceG)"/>
               <rect x="67" y="263" width="12" height="2.5" rx="1.5" fill="rgba(255,255,255,.7)"/>
               <line x1="64" y1="275" x2="106" y2="275" stroke="rgba(160,210,235,.4)" stroke-width="1"/>
             </g>
-            <g transform="rotate(8,135,270)" opacity=".68">
+            <g id="ice2" transform="rotate(8,135,270)" opacity=".68">
               <rect x="114" y="258" width="40" height="30" rx="6" fill="url(#iceG)" filter="url(#iceBlur)"/>
               <rect x="117" y="261" width="10" height="2.5" rx="1.5" fill="rgba(255,255,255,.65)"/>
               <line x1="114" y1="273" x2="154" y2="273" stroke="rgba(160,210,235,.35)" stroke-width="1"/>
             </g>
-            <g transform="rotate(-9,72,295)" opacity=".88">
+            <g id="ice3" transform="rotate(-9,72,295)" opacity=".88">
               <rect x="50" y="285" width="44" height="32" rx="6" fill="url(#iceG)" filter="url(#iceBlur)"/>
               <rect x="53" y="288" width="14" height="3"   rx="2"   fill="rgba(255,255,255,.75)"/>
               <line x1="50" y1="301" x2="94"  y2="301" stroke="rgba(160,210,235,.45)" stroke-width="1.2"/>
               <path d="M50,295 L94,295" stroke="rgba(180,220,240,.25)" stroke-width=".6" fill="none"/>
             </g>
-            <g transform="rotate(5,140,292)" opacity=".85">
+            <g id="ice4" transform="rotate(5,140,292)" opacity=".85">
               <rect x="119" y="280" width="42" height="30" rx="6" fill="url(#iceG)"/>
               <rect x="122" y="283" width="12" height="3"   rx="2"   fill="rgba(255,255,255,.7)"/>
               <line x1="119" y1="296" x2="161" y2="296" stroke="rgba(160,210,235,.4)" stroke-width="1"/>
             </g>
-            <g transform="rotate(-3,95,315)" opacity=".6">
+            <g id="ice5" transform="rotate(-3,95,315)" opacity=".6">
               <rect x="75" y="308" width="38" height="22" rx="5" fill="url(#iceG)"/>
               <rect x="78" y="311" width="9"  height="2"  rx="1.5" fill="rgba(255,255,255,.6)"/>
             </g>
@@ -961,6 +961,7 @@
   const completeMsg = document.getElementById('completeMsg');
   const cupScene    = document.getElementById('cupScene');
   const setCustomBtn = document.getElementById('setCustomBtn');
+  const iceEls      = ['ice1','ice2','ice3','ice4','ice5'].map(id => document.getElementById(id));
 
   // ── Geometry ───────────────────────────────────────────────────────────────
   const CIRC       = 534.07;
@@ -968,6 +969,20 @@
   const CUP_BOTTOM = 318;
   const CUP_HEIGHT = CUP_BOTTOM - CUP_TOP;
   let bubbleY = [215, 232, 248, 220];
+
+  // Base rotation + pivot for each ice cube (matches its static SVG transform),
+  // so the float animation can rebuild the transform each frame.
+  const ICE_BASE = [
+    { angle: -5, cx: 85,  cy: 272, freq: 0.6,  phase: 0   },
+    { angle: 8,  cx: 135, cy: 270, freq: 0.5,  phase: 1.7 },
+    { angle: -9, cx: 72,  cy: 295, freq: 0.45, phase: 3.1 },
+    { angle: 5,  cx: 140, cy: 292, freq: 0.55, phase: 0.9 },
+    { angle: -3, cx: 95,  cy: 315, freq: 0.65, phase: 2.2 }
+  ];
+
+  // Ambient wave amplitude multiplier; spikes on interaction and decays back to 1.
+  let sloshBoost = 1;
+  function triggerSlosh() { sloshBoost = 3; }
 
   // ── Audio ──────────────────────────────────────────────────────────────────
   let alarmAudioCtx = null;
@@ -1278,8 +1293,9 @@
 
   function animateWave(ts) {
     const t = ts / 1000;
-    const a1 = Math.sin(t * 0.9) * 4.5, a2 = Math.cos(t * 1.2) * 3.8;
-    const a3 = Math.sin(t * 0.7 + 1) * 3, a4 = Math.cos(t * 1.5) * 2.5;
+    sloshBoost += (1 - sloshBoost) * 0.05;
+    const a1 = Math.sin(t * 0.9) * 4.5 * sloshBoost, a2 = Math.cos(t * 1.2) * 3.8 * sloshBoost;
+    const a3 = Math.sin(t * 0.7 + 1) * 3 * sloshBoost, a4 = Math.cos(t * 1.5) * 2.5 * sloshBoost;
     waveShadow.setAttribute('d', `M0,${14+a2} C28,${8+a1} 58,${22+a2} 86,${14+a3} C114,${6+a2} 140,${20+a1} 166,${14+a4} C180,${10+a2} 192,${17+a3} 200,${14+a1} L200,30 L0,30 Z`);
     waveMain.setAttribute('d',   `M0,${10+a1} C24,${4+a2} 52,${18+a1} 78,${10+a3} C104,${2+a2} 130,${18+a1} 156,${10+a4} C172,${5+a3} 188,${14+a2} 200,${10+a1} L200,23 L0,23 Z`);
     waveCrest.setAttribute('d',  `M0,${11+a3} C26,${7+a1} 54,${15+a3} 80,${11+a2} C106,${7+a3} 132,${15+a1} 158,${11+a4} C174,${8+a2} 190,${13+a3} 200,${11+a2} L200,16 L0,16 Z`);
@@ -1291,6 +1307,12 @@
       bubbleY[i] -= [0.18, 0.13, 0.10, 0.15][i];
       if (bubbleY[i] < baseY) bubbleY[i] = resetY;
       const el = document.getElementById(id); if (el) el.setAttribute('cy', bubbleY[i]);
+    });
+    ICE_BASE.forEach((cube, i) => {
+      const el = iceEls[i]; if (!el) return;
+      const bobY = Math.sin(t * cube.freq + cube.phase) * 1.4;
+      const rotDrift = Math.sin(t * cube.freq * 0.7 + cube.phase) * 1.6;
+      el.setAttribute('transform', `rotate(${cube.angle + rotDrift},${cube.cx},${cube.cy}) translate(0,${bobY})`);
     });
     requestAnimationFrame(animateWave);
   }
@@ -1432,6 +1454,7 @@
     rip.style.left = (x - 18) + 'px';
     rip.style.top  = (y - 18) + 'px';
     cupScene.appendChild(rip); setTimeout(() => rip.remove(), 700);
+    triggerSlosh();
   }
   cupScene.addEventListener('click', e => {
     const rect = cupScene.getBoundingClientRect();
