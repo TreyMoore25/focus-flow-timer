@@ -26,7 +26,6 @@ A single-file productivity dashboard built around the Pomodoro technique. No dep
 - Copy the full day's log as a formatted text report
 
 **Integrations**
-- **Slack webhook** — automatically posts a summary when a focus session completes; per-entry 🔗 button to send individual blocks manually
 - **Google Sheets webhook** — posts session data to a connected Apps Script endpoint
 - **Alarm sound themes** — choose from Beeps, Chime, Bell, or Pulse; clicking previews the sound immediately
 
@@ -37,15 +36,11 @@ A single-file productivity dashboard built around the Pomodoro technique. No dep
 
 1. Download or clone the repo
 2. Open `Acai timer.html` in any modern browser
-3. (Optional) Paste a Slack incoming webhook URL and/or Google Sheets Apps Script URL into the integrations panel
+3. (Optional) Paste a Google Sheets Apps Script URL into the integrations panel
 
 No server, no npm install, no config files.
 
 ## Integrations Setup
-
-### Slack
-1. Create an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your Slack workspace
-2. Paste the webhook URL into the **Slack Webhook** field in the integrations panel and click **Save**
 
 ### Google Sheets
 1. Create a Google Sheet and open **Extensions → Apps Script**

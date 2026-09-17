@@ -896,15 +896,6 @@
 
       <div class="integrations">
         <div class="integration-section">
-          <div class="int-label">Slack Webhook</div>
-          <div class="int-row">
-            <input type="url" id="slackWebhookInput" class="int-input" placeholder="https://hooks.slack.com/services/..."/>
-            <button type="button" id="slackSaveUrlBtn" class="set-btn">Save</button>
-          </div>
-          <div id="slackSyncStatus" class="sync-status"></div>
-        </div>
-
-        <div class="integration-section">
           <div class="int-label">Google Sheets URL</div>
           <div class="int-row">
             <input type="url" id="sheetWebhookInput" class="int-input" placeholder="https://script.google.com/macros/..."/>
@@ -948,7 +939,6 @@
   // ── Storage keys ───────────────────────────────────────────────────────────
   const LOG_KEY          = 'focusFlowSessionLog_v1';
   const SHEET_WEBHOOK_KEY = 'focusFlowSheetWebhookUrl';
-  const SLACK_WEBHOOK_KEY = 'focusFlowSlackWebhookUrl';
   const TODO_KEY         = 'focusFlowTodos_v1';
 
   // ── DOM refs ───────────────────────────────────────────────────────────────
@@ -1044,7 +1034,6 @@
     all.push(entry);
     localStorage.setItem(LOG_KEY, JSON.stringify(all));
     syncEntryToGoogleSheet(entry);
-    syncEntryToSlack(entry);
     return entry;
   }
 
@@ -1063,28 +1052,6 @@
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(() => setSheetStatus('Appended to Google Sheet.', false))
       .catch(() => setSheetStatus('Google Sheet not updated — check URL or network.', true));
-  }
-
-  // ── Slack ──────────────────────────────────────────────────────────────────
-  function getSlackWebhookUrl() { return (localStorage.getItem(SLACK_WEBHOOK_KEY) || '').trim(); }
-  function setSlackStatus(msg, isErr) {
-    const el = document.getElementById('slackSyncStatus');
-    if (!el) return;
-    el.textContent = msg; el.style.color = isErr ? '#b03a50' : '#2d6a3e';
-    if (el._timer) clearTimeout(el._timer);
-    el._timer = setTimeout(() => { el.textContent = ''; }, 8000);
-  }
-  function syncEntryToSlack(entry) {
-    const url = getSlackWebhookUrl(); if (!url) return;
-    const start = new Date(entry.startIso), end = new Date(entry.endIso);
-    const timeRange = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) +
-                      ' \u2013 ' + end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    const noteText = entry.note ? '\n>' + entry.note : '';
-    const text = '\u2705 *Focus Block* \u2014 ' + entry.durationMin + ' min (' + timeRange + ')' + noteText;
-    fetch(url, { method: 'POST', body: JSON.stringify({ text }), headers: { 'Content-Type': 'application/json' } })
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(() => setSlackStatus('Sent to Slack!', false))
-      .catch(() => setSlackStatus('Slack not updated \u2014 check webhook URL.', true));
   }
 
   // ── To-Do ──────────────────────────────────────────────────────────────────
@@ -1452,17 +1419,6 @@
       const v = sheetInput.value.trim();
       localStorage.setItem(SHEET_WEBHOOK_KEY, v);
       setSheetStatus(v ? 'Google Sheet URL saved.' : 'URL cleared.', false);
-    });
-  }
-
-  const slackInput   = document.getElementById('slackWebhookInput');
-  const slackSaveBtn = document.getElementById('slackSaveUrlBtn');
-  if (slackInput) slackInput.value = getSlackWebhookUrl();
-  if (slackSaveBtn && slackInput) {
-    slackSaveBtn.addEventListener('click', () => {
-      const v = slackInput.value.trim();
-      localStorage.setItem(SLACK_WEBHOOK_KEY, v);
-      setSlackStatus(v ? 'Slack webhook saved! Logs will post when sessions complete.' : 'URL cleared.', false);
     });
   }
 
