@@ -17,7 +17,8 @@ A single-file productivity dashboard built around the Pomodoro technique. No dep
 - Session completion dots track your daily Pomodoro count
 
 **To-Do List**
-- Add, check off, and delete tasks
+- Workflow: **Start** a task to move it into In Progress (also loads its name into the timer's task field); **Complete** opens a modal to record how long it took, moving it to Done
+- Add and delete tasks; schedule for Today/Tomorrow/Later
 - Persisted in `localStorage` — survives page reloads
 
 **Focus Log**
