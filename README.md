@@ -21,9 +21,9 @@ A single-file productivity dashboard built around the Pomodoro technique. No dep
 
 **Focus Log**
 - Each completed session prompts for an optional note
-- Log groups entries by hour, showing 12-hour timestamps (e.g. `2:15:42 PM – 2:40:09 PM`)
+- Log groups entries by hour, showing 12-hour timestamps (e.g. `2:15 PM – 2:40 PM`)
 - Delete individual entries
-- Copy the full day's log as a formatted text report, or export it as a `.txt` file
+- Copy the full day's log as a formatted text report, or export it as a `.txt` or `.csv` file
 
 **Integrations**
 - **Slack webhook** — automatically posts a summary when a focus session completes; per-entry 🔗 button to send individual blocks manually

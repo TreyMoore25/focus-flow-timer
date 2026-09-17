@@ -892,6 +892,7 @@
       <div class="log-header-actions">
         <button type="button" id="copyReportBtn" class="btn-text">Copy Report</button>
         <button type="button" id="exportReportBtn" class="btn-text">Export .txt</button>
+        <button type="button" id="exportCsvBtn" class="btn-text">Export .csv</button>
       </div>
     </div>
 
@@ -1004,11 +1005,10 @@
   }
 
   // ── Utilities ──────────────────────────────────────────────────────────────
-  function fmtHMS(date) {
+  function fmtHM(date) {
     const h = date.getHours(), ampm = h >= 12 ? 'PM' : 'AM';
     return (h % 12 || 12) + ':' +
-           String(date.getMinutes()).padStart(2,'0') + ':' +
-           String(date.getSeconds()).padStart(2,'0') + ' ' + ampm;
+           String(date.getMinutes()).padStart(2,'0') + ' ' + ampm;
   }
 
   function todayKey() {
@@ -1189,7 +1189,7 @@
       html += '<div class="hour-block"><div class="hour-label">' + escapeHtml(formatHourLabel(h, list.length)) + '</div>';
       list.forEach(e => {
         const st = new Date(e.startIso), en = new Date(e.endIso);
-        const tr = fmtHMS(st) + ' \u2013 ' + fmtHMS(en);
+        const tr = fmtHM(st) + ' \u2013 ' + fmtHM(en);
         const noteHtml = e.note ? escapeHtml(e.note) : '<span class="muted">(no note)</span>';
         html += '<div class="log-entry" data-id="' + escapeHtml(e.id) + '"><span class="log-entry-time">' + tr + '</span><span class="log-entry-dur">' + e.durationMin + ' min</span><button class="log-entry-del" title="Remove entry">&times;</button><p class="log-entry-note">' + noteHtml + '</p></div>';
       });
@@ -1216,12 +1216,38 @@
       lines.push('\u2014\u2014 ' + formatHourLabel(h, byHour[h].length) + ' \u2014\u2014');
       byHour[h].forEach(e => {
         const st = new Date(e.startIso), en = new Date(e.endIso);
-        const tr = fmtHMS(st) + ' \u2013 ' + fmtHMS(en);
+        const tr = fmtHM(st) + ' \u2013 ' + fmtHM(en);
         lines.push(tr + ' | ' + e.durationMin + ' min | ' + (e.note || '(no note)'));
       });
       lines.push('');
     });
     return lines.join('\n').trim() + '\n';
+  }
+
+  function csvField(value) {
+    const s = String(value ?? '');
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function buildDayReportCsv() {
+    const key = todayKey();
+    const all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    const today = all.filter(e => e.dayKey === key).sort((a,b) => a.startIso.localeCompare(b.startIso));
+    const rows = [['Date', 'Start', 'End', 'Duration (min)', 'Note']];
+    today.forEach(e => {
+      const st = new Date(e.startIso), en = new Date(e.endIso);
+      rows.push([key, fmtHM(st), fmtHM(en), e.durationMin, e.note || '']);
+    });
+    return rows.map(r => r.map(csvField).join(',')).join('\r\n') + '\r\n';
+  }
+
+  function downloadTextFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
   }
 
   // ── Break / session flow ───────────────────────────────────────────────────
@@ -1445,13 +1471,14 @@
   const exportReportBtn = document.getElementById('exportReportBtn');
   if (exportReportBtn) {
     exportReportBtn.addEventListener('click', () => {
-      const blob = new Blob([buildDayReportText()], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'focus-flow-' + todayKey() + '.txt';
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+      downloadTextFile('focus-flow-' + todayKey() + '.txt', buildDayReportText(), 'text/plain;charset=utf-8');
+    });
+  }
+
+  const exportCsvBtn = document.getElementById('exportCsvBtn');
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', () => {
+      downloadTextFile('focus-flow-' + todayKey() + '.csv', buildDayReportCsv(), 'text/csv;charset=utf-8');
     });
   }
 
