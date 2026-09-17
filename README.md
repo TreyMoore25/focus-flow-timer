@@ -6,6 +6,7 @@ A single-file productivity dashboard built around the Pomodoro technique. No dep
 
 **Timer**
 - Configurable session length via quick-pick buttons (5, 15, 25, 45, 60 min) or a custom H/M/S input
+- Optional task name field — set what you're working on before starting; carries through to the focus log, note prompt, and text report
 - Circular progress ring with animated gradient stroke
 - Start, pause, and reset controls
 - Automatic break prompt after each focus block (5 min short / 15 min long)

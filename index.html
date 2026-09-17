@@ -176,6 +176,22 @@
       gap: 10px;
     }
 
+    .task-input {
+      width: 100%;
+      text-align: center;
+      border: 1.5px solid #f0c0cf;
+      border-radius: 12px;
+      padding: 7px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .8rem;
+      color: var(--berry);
+      outline: none;
+      background: white;
+      transition: border-color .18s;
+    }
+    .task-input:focus { border-color: var(--accent); }
+    .task-input::placeholder { color: #c0a0b0; }
+
     .progress-wrap {
       position: relative;
       width: 140px; height: 140px;
@@ -539,6 +555,7 @@
       transition: color .15s;
     }
     .log-entry-del:hover { color: #e04060; }
+    .log-entry-task { font-size: .82rem; font-weight: 600; color: var(--berry); grid-column: 1 / -1; }
     .log-entry-note { font-size: .78rem; color: #6a7080; grid-column: 1 / -1; margin-top: 3px; }
     .muted { color: #c0b0b8; font-style: italic; }
 
@@ -600,6 +617,7 @@
     }
     .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--ink); }
     .modal-time  { font-size: .8rem; color: var(--text-label); }
+    .modal-task  { font-size: .85rem; font-weight: 600; color: var(--ink); }
 
     .modal-note {
       border: 1.5px solid #f0c0cf;
@@ -794,6 +812,8 @@
       <div class="tile-label">Timer</div>
     </div>
 
+    <input type="text" id="taskNameInput" class="task-input" placeholder="What are you working on?" maxlength="80"/>
+
     <div class="progress-wrap">
       <svg class="progress-svg" viewBox="0 0 186 186" width="140" height="140">
         <defs>
@@ -915,6 +935,7 @@
   <div class="modal-card">
     <div class="modal-title">Log this focus block</div>
     <div class="modal-time" id="logTimeRange"></div>
+    <div class="modal-task" id="logTaskName" hidden></div>
     <textarea id="logNoteInput" class="modal-note" placeholder="What did you accomplish? (optional)"></textarea>
     <div class="modal-row">
       <button type="button" id="logSkipBtn" class="btn-text">Skip</button>
@@ -932,6 +953,7 @@
   let sessions     = 0;
   let isBreak      = false;
   let focusSessionStart = null;
+  let currentTaskName   = '';
 
   function stopTickInterval() {
     if (interval !== null) { clearInterval(interval); interval = null; }
@@ -962,6 +984,7 @@
   const cupScene    = document.getElementById('cupScene');
   const setCustomBtn = document.getElementById('setCustomBtn');
   const iceEls      = ['ice1','ice2','ice3','ice4','ice5'].map(id => document.getElementById(id));
+  const taskNameInput = document.getElementById('taskNameInput');
 
   // ── Geometry ───────────────────────────────────────────────────────────────
   const CIRC       = 534.07;
@@ -1036,12 +1059,13 @@
   }
 
   // ── Session log ────────────────────────────────────────────────────────────
-  function addLogEntry({ startIso, endIso, durationSec, note }) {
+  function addLogEntry({ startIso, endIso, durationSec, task, note }) {
     let id;
     try { id = crypto.randomUUID(); } catch (e) { id = String(Date.now()) + '-' + Math.random().toString(16).slice(2); }
     const entry = {
       id, startIso, endIso, durationSec,
       durationMin: Math.round(durationSec / 60 * 10) / 10,
+      task: task || '',
       note: note || '',
       dayKey: todayKey(),
       createdIso: new Date().toISOString()
@@ -1179,8 +1203,9 @@
       list.forEach(e => {
         const st = new Date(e.startIso), en = new Date(e.endIso);
         const tr = fmtHM(st) + ' \u2013 ' + fmtHM(en);
+        const taskHtml = e.task ? '<p class="log-entry-task">' + escapeHtml(e.task) + '</p>' : '';
         const noteHtml = e.note ? escapeHtml(e.note) : '<span class="muted">(no note)</span>';
-        html += '<div class="log-entry" data-id="' + escapeHtml(e.id) + '"><span class="log-entry-time">' + tr + '</span><span class="log-entry-dur">' + e.durationMin + ' min</span><button class="log-entry-del" title="Remove entry">&times;</button><p class="log-entry-note">' + noteHtml + '</p></div>';
+        html += '<div class="log-entry" data-id="' + escapeHtml(e.id) + '"><span class="log-entry-time">' + tr + '</span><span class="log-entry-dur">' + e.durationMin + ' min</span><button class="log-entry-del" title="Remove entry">&times;</button>' + taskHtml + '<p class="log-entry-note">' + noteHtml + '</p></div>';
       });
       html += '</div>';
     });
@@ -1206,7 +1231,8 @@
       byHour[h].forEach(e => {
         const st = new Date(e.startIso), en = new Date(e.endIso);
         const tr = fmtHM(st) + ' \u2013 ' + fmtHM(en);
-        lines.push(tr + ' | ' + e.durationMin + ' min | ' + (e.note || '(no note)'));
+        const taskPart = e.task ? (e.task + ' | ') : '';
+        lines.push(tr + ' | ' + e.durationMin + ' min | ' + taskPart + (e.note || '(no note)'));
       });
       lines.push('');
     });
@@ -1222,10 +1248,10 @@
     const key = todayKey();
     const all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
     const today = all.filter(e => e.dayKey === key).sort((a,b) => a.startIso.localeCompare(b.startIso));
-    const rows = [['Date', 'Start', 'End', 'Duration (min)', 'Note']];
+    const rows = [['Date', 'Start', 'End', 'Duration (min)', 'Task', 'Note']];
     today.forEach(e => {
       const st = new Date(e.startIso), en = new Date(e.endIso);
-      rows.push([key, fmtHM(st), fmtHM(en), e.durationMin, e.note || '']);
+      rows.push([key, fmtHM(st), fmtHM(en), e.durationMin, e.task || '', e.note || '']);
     });
     return rows.map(r => r.map(csvField).join(',')).join('\r\n') + '\r\n';
   }
@@ -1248,16 +1274,18 @@
     startBtn.textContent = 'Start Break';
   }
 
-  function showFocusLogPrompt(startIso, endIso, durationSec, onDone) {
+  function showFocusLogPrompt(startIso, endIso, durationSec, taskName, onDone) {
     const modal   = document.getElementById('logModal');
     const note    = document.getElementById('logNoteInput');
     const span    = document.getElementById('logTimeRange');
+    const taskEl  = document.getElementById('logTaskName');
     const saveBtn = document.getElementById('logSaveBtn');
     const skipBtnM = document.getElementById('logSkipBtn');
     if (!modal || !note || !saveBtn || !skipBtnM) { onDone(); return; }
     note.value = '';
     const fmt = iso => new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     span.textContent = fmt(startIso) + ' \u2013 ' + fmt(endIso) + ' \u00B7 ' + Math.round(durationSec / 60) + ' min focus';
+    if (taskEl) { taskEl.textContent = taskName || ''; taskEl.hidden = !taskName; }
     const previouslyFocused = document.activeElement;
     const focusable = [note, saveBtn, skipBtnM];
     modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); note.focus();
@@ -1266,7 +1294,7 @@
       modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); onDone();
       if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
     };
-    saveBtn.onclick = () => { addLogEntry({ startIso, endIso, durationSec, note: note.value.trim() }); renderDayLog(); done(); };
+    saveBtn.onclick = () => { addLogEntry({ startIso, endIso, durationSec, task: taskName, note: note.value.trim() }); renderDayLog(); done(); };
     skipBtnM.onclick = () => done();
     note.onkeydown = e => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveBtn.click(); }
@@ -1366,10 +1394,11 @@
         const sessStart = focusSessionStart || new Date(Date.now() - Math.max(1, totalSeconds) * 1000).toISOString();
         const sessEnd   = new Date().toISOString();
         const actualSec = Math.max(1, Math.round((new Date(sessEnd) - new Date(sessStart)) / 1000));
+        const sessTask  = currentTaskName;
         focusSessionStart = null;
         setTimeout(() => {
           completeMsg.classList.remove('show');
-          showFocusLogPrompt(sessStart, sessEnd, actualSec, () => { beginBreakAfterFocus(); });
+          showFocusLogPrompt(sessStart, sessEnd, actualSec, sessTask, () => { beginBreakAfterFocus(); });
         }, 1600);
       } else {
         const t = readDurationSeconds(); totalSeconds = t > 0 ? t : 25 * 60; remaining = totalSeconds;
@@ -1408,7 +1437,7 @@
       if (!isBreak) {
         const from = readDurationSeconds();
         if (from > 0 && remaining === totalSeconds) { totalSeconds = from; remaining = from; updateDisplay(); }
-        if (!focusSessionStart) focusSessionStart = new Date().toISOString();
+        if (!focusSessionStart) { focusSessionStart = new Date().toISOString(); currentTaskName = taskNameInput.value.trim(); }
       }
       stopTickInterval(); interval = setInterval(tick, 1000); running = true; startBtn.textContent = 'Pause';
     }
